@@ -24,10 +24,11 @@ conda activate face-services
 pip install -r requirements.txt
 ```
 
-You also need to download the following models from dlib:
-http://dlib.net/files/dlib_face_recognition_resnet_model_v1.dat.bz2
-http://dlib.net/files/shape_predictor_5_face_landmarks.dat.bz2
-http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
+You also need to download various pretrained models
+
+```
+python fetch_models.py
+```
 
 ## Webcam test
 

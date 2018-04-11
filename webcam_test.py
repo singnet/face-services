@@ -4,10 +4,7 @@ from skimage import io
 import numpy as np
 import cv2
 
-# TODO: script to auto-fetch and extract these to the models/ dir
-# http://dlib.net/files/dlib_face_recognition_resnet_model_v1.dat.bz2
-# http://dlib.net/files/shape_predictor_5_face_landmarks.dat.bz2
-# http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
+
 
 # external models
 landmark68_predictor_path = "models/shape_predictor_68_face_landmarks.dat"
@@ -80,8 +77,8 @@ def detect_from_webcam():
         for i, d in enumerate(dets):
             #print("Detection {}, score: {}, face_type:{}".format(
             #    d, scores[i], idx[i]))
-            print("Detection {}: Left: {} Top: {} Right: {} Bottom: {}".format(
-                i, d.left(), d.top(), d.right(), d.bottom()))
+            #print("Detection {}: Left: {} Top: {} Right: {} Bottom: {}".format(
+            #    i, d.left(), d.top(), d.right(), d.bottom()))
             cv2.rectangle(frame, (d.left(), d.top()), (d.right(), d.bottom()), (0, 255, 0), 2)
 
             landmark_predictor = landmark_predictors[landmark_idx]
@@ -90,13 +87,13 @@ def detect_from_webcam():
             detected_landmarks = detection_object.parts()
             show_landmarks(frame, detected_landmarks)
 
-            face_descriptor = facerec.compute_face_descriptor(img, detection_object)
+            face_descriptor = facerec.compute_face_descriptor(img, detection_object, 10)
 
             # TODO: this currently is just comparing to the last frame. Won't handle multiple faces.
             # To handle multiple faces we need to compare distance to all previous identities, or
             # track the bbox movement
             new_identity = np.matrix(face_descriptor)
-            print("Distance to last identity", np.linalg.norm(last_identity - new_identity))
+            print("Distance to last identity %.4f" % np.linalg.norm(last_identity - new_identity))
             last_identity = new_identity
 
         cv2.imshow("Faces found", frame)
