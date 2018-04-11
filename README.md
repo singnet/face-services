@@ -31,6 +31,8 @@ http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
 
 ## Webcam test
 
+![alt text](example_webcam.jpg)
+
 Eventually all services will call each other via some RPC mechanism, but while attempting to get each part working well
 there is a `webcam_test.py` script.
 
