@@ -1,9 +1,10 @@
+import os
 import sys
 import dlib
 from skimage import io
 import numpy as np
 import cv2
-
+import tempfile
 
 # external models
 landmark68_predictor_path = "models/shape_predictor_68_face_landmarks.dat"
@@ -104,6 +105,10 @@ def detect_from_webcam(save_video):
     if save_video:
         videowriter = cv2.VideoWriter("test.avi", cv2.VideoWriter_fourcc(*'DIV4'), 20, (width, height))
 
+    fh, temp_file = tempfile.mkstemp('.jpg')
+    os.close(fh)
+    temp_file_no_ext = ".".join(temp_file.rsplit('.')[:-1])
+
     while(do_loop):
         # Capture frame-by-frame
         ret, frame = cap.read()
@@ -139,6 +144,15 @@ def detect_from_webcam(save_video):
             landmark_predictor = landmark_predictors[landmark_idx]
 
             detection_object = landmark_predictor(img, d)
+
+            # This is a hack to get the aligned face image via the dlib API
+            # It writes to a file that we have to read back
+            # `compute_face_descriptor` recomputes the alignment and won't accept a differently aligned face
+
+            dlib.save_face_chip(img, detection_object, temp_file_no_ext)
+            aligned_img = cv2.cvtColor(io.imread(temp_file), cv2.COLOR_RGB2BGR)
+            cv2.imshow("aligned", aligned_img)
+
             detected_landmarks = detection_object.parts()
             show_landmarks(frame, detected_landmarks)
 
@@ -156,7 +170,7 @@ def detect_from_webcam(save_video):
         if save_video:
             videowriter.write(frame)
 
-        key = cv2.waitKey(1)
+        key = cv2.waitKey(1) & 0xFF
 
         if key != -1:
             if key == ord('q'):
@@ -167,8 +181,10 @@ def detect_from_webcam(save_video):
             elif key == ord('d'):
                 face_idx += 1
                 face_idx %= num_face_detectors
+    os.remove(temp_file)
+
     cv2.destroyAllWindows()
-    cv2.VideoCapture(0).release()
+    cap.release()
 
 
 def process_and_show_detected_faces():
