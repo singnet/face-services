@@ -5,14 +5,14 @@ of faces.
 
 Initially, services will be implemented that support the following tasks:
 
-- Face localization - provides bounding boxes where faces are detected.
+- Face localization - provides bounding boxes where faces are detected (opencv Haar cascade, dlib HOG, or dlib CNN).
 - Face landmark detection - provides a set of face keypoints based on a keypoint model.
 - Face alignment - transforms face (rotate, translates, and scales) to a template landmark layout.
 - Face identity - return a vector representing the faces identity mapped to N-dimensional manifold.
 
 There are different techniques to solve these tasks, and the goal is provide multiple implementations so that
 upstream tasks can swap implementations depending on availability, price, their impact on reputation and performance,
-or other factors.
+or other factors. To begin with, this is a simple wrapping of dlib and opencv algorithms.
 
 ## Dependencies
 
