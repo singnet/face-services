@@ -148,8 +148,7 @@ def detect_from_webcam(save_video):
             # This is a hack to get the aligned face image via the dlib API
             # It writes to a file that we have to read back
             # `compute_face_descriptor` recomputes the alignment and won't accept a differently aligned face
-
-            dlib.save_face_chip(img, detection_object, temp_file_no_ext)
+            dlib.save_face_chip(img, detection_object, temp_file_no_ext, 150, 0.2)
             aligned_img = cv2.cvtColor(io.imread(temp_file), cv2.COLOR_RGB2BGR)
             cv2.imshow("aligned", aligned_img)
 
