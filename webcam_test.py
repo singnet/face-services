@@ -107,8 +107,14 @@ def detect_from_webcam(save_video):
 
     last_identity = np.zeros((128,))
 
+    chip_size = 150
+    border = 0.2
+
     if save_video:
         videowriter = cv2.VideoWriter("test.avi", cv2.VideoWriter_fourcc(*'DIV4'), 20, (width, height))
+        chip_size = 300
+        border = 1.0
+        videowriter_aligned = cv2.VideoWriter("test_align.avi", cv2.VideoWriter_fourcc(*'DIV4'), 20, (chip_size, chip_size))
 
     fh, temp_file = tempfile.mkstemp('.jpg')
     os.close(fh)
@@ -168,8 +174,13 @@ def detect_from_webcam(save_video):
             # This is a hack to get the aligned face image via the dlib API
             # It writes to a file that we have to read back
             # `compute_face_descriptor` recomputes the alignment and won't accept a differently aligned face
-            dlib.save_face_chip(img, detection_object, temp_file_no_ext, 150, 0.2)
+
+            dlib.save_face_chip(img, detection_object, temp_file_no_ext, chip_size, border)
+
+
             aligned_img = cv2.cvtColor(io.imread(temp_file), cv2.COLOR_RGB2BGR)
+            if save_video:
+                videowriter_aligned.write(aligned_img)
             cv2.imshow("aligned", aligned_img)
 
             detected_landmarks = detection_object.parts()
