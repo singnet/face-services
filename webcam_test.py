@@ -10,6 +10,8 @@ import tempfile
 landmark68_predictor_path = "models/shape_predictor_68_face_landmarks.dat"
 landmark5_predictor_path = "models/shape_predictor_5_face_landmarks.dat"
 recognition_model_path = "models/dlib_face_recognition_resnet_model_v1.dat"
+
+cnn_face_detector_path = "models/mmod_human_face_detector.dat"
 cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 
 
@@ -85,19 +87,22 @@ def detect_from_webcam(save_video):
     width, height = query_capture(cap)
     do_loop = True
 
-    # dlib models
-    detector = dlib.get_frontal_face_detector()
+    # face detection/localization
+    face_detector_dlib_hog = dlib.get_frontal_face_detector()
+    face_detector_dlib_cnn = dlib.cnn_face_detection_model_v1(cnn_face_detector_path)
+    face_detector_opencv_haarcascade = cv2.CascadeClassifier(cascade_path)
+
+    # landmark prediction
     landmark68_predictor = dlib.shape_predictor(landmark68_predictor_path)
     landmark5_predictor = dlib.shape_predictor(landmark5_predictor_path)
-    facerec = dlib.face_recognition_model_v1(recognition_model_path)
 
-    # opencv models
-    faceCascade = cv2.CascadeClassifier(cascade_path)
+    # face recognition
+    facerec = dlib.face_recognition_model_v1(recognition_model_path)
 
     landmark_predictors = [landmark5_predictor, landmark68_predictor]
     landmark_idx = 0
 
-    num_face_detectors = 2
+    num_face_detectors = 3
     face_idx = 0
 
     last_identity = np.zeros((128,))
@@ -114,9 +119,12 @@ def detect_from_webcam(save_video):
         ret, frame = cap.read()
 
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # face detection
+        # TODO: use intermediate representation that includes confidence?
         if face_idx == 0:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = faceCascade.detectMultiScale(
+            faces = face_detector_opencv_haarcascade.detectMultiScale(
                 gray,
                 scaleFactor=1.05,
                 minNeighbors=5,
@@ -129,8 +137,20 @@ def detect_from_webcam(save_video):
             for (x, y, w, h) in faces:
                 dets.append(dlib.rectangle(x, y, x+w, y+h))
 
+        elif face_idx == 1:
+            dets = face_detector_dlib_hog(img, 1)
+
         else:
-            dets = detector(img, 1)
+            cnn_dets = face_detector_dlib_cnn(img, 1)
+            dets = []
+            for cnn_d in cnn_dets:
+                # different return type because it includes confidence, get the rect
+                d = cnn_d.rect
+                h = d.top() - d.bottom()
+                # cnn max margin detector seems to cut off the chin and this confuses landmark predictor,
+                # expand height by 10%
+                dets.append(dlib.rectangle(d.left(), d.top(), d.right(), d.bottom() - int(h / 10.0)))
+
 
 
         print("Number of faces detected: {}".format(len(dets)))

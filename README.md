@@ -1,16 +1,16 @@
 # Face Services
 
-This repository contains a number of services related to the detection, tracking, identification, and manipulation
+This repository contains a number of prototype services related to the detection, tracking, identification, and manipulation
 of faces.
 
 ## Overview
 
 Initially, services will be implemented that support the following tasks:
 
-- Face localization - provides bounding boxes where faces are detected.
-- Face landmark detection - provides a set of face keypoints based on a keypoint model.
-- Face alignment - transforms face (rotate, translates, and scales) to a template landmark layout.
-- Face recognition - return a vector representing the faces identity mapped to N-dimensional manifold.
+- *Face localization* - provides bounding boxes where faces are detected.
+- *Face landmark detection* - provides a set of face keypoints based on a keypoint model.
+- *Face alignment* - transforms face (rotate, translates, and scales) to a template landmark layout.
+- *Face recognition* - return a vector representing the faces identity mapped to N-dimensional manifold.
 
 There are different techniques to solve these tasks, and the goal is provide multiple implementations so that
 upstream tasks can swap implementations depending on availability, price, their impact on reputation and performance,
@@ -36,7 +36,7 @@ python fetch_models.py
 
 ![alt text](example_webcam.jpg)
 
-Eventually all services will call each other via some RPC mechanism, but while attempting to get each part working well
+Eventually all services will call each other via some RPC mechanism, but while attempting to get each part working
 there is a `webcam_test.py` script.
 
 This will activate your webcam and overlay outputs from each stage of processing, run with `python webcam_test.py`
@@ -45,15 +45,17 @@ from the conda `face-services` environment you created above.
 ## Face Service Details
 
 The aim is that any component can be swapped out with another, and be able to gracefully handle different inputs.
-This section aims to describe those interfaces, and responsibilities. It will become more specific as the
-implementation progresses.
+This section aims to describe those interfaces, and responsibilities. It will become more specific as they are 
+implementated.
 
 ### Face localization
 
-Implementations: opencv haar cascade, dlib HOG, dlib CNN
+Implementations: [opencv haar cascade](https://docs.opencv.org/3.4.1/d7/d8b/tutorial_py_face_detection.html),
+[dlib HOG and SVM](https://github.com/davisking/dlib/blob/master/python_examples/face_detector.py),
+[dlib CNN](https://github.com/davisking/dlib/blob/master/python_examples/cnn_face_detector.py)
 
 Calls:
-- `get_bounding_boxes` -> expects rgb image, return a number bounding boxes where faces are detected 0..N,
+- `get_bounding_boxes` -> expects rgb image, return a number of bounding boxes where faces are detected,
 optionally return rgb image with bounding box annotations.
 
 ### Face landmark detection
@@ -62,7 +64,7 @@ Implementations: dlib 68 point CNN, dlib 5 point CNN, clmtrack
 
 Calls:
 - `get_landmark_models` -> no arguments, return list of landmark models, including description of each landmark,
-  e.g. "tip of nose", optionally also include
+  e.g. "tip of nose", optionally also return rgb image showing the layout 
 - `get_landmarks` -> expects rgb image. Find faces, then return x,y locations for each landmark.
 - `get_landmarks_for_faces` -> expects rgb image, a list of face detection bboxes.
   For each face bbox, return x,y locations for each landmark
