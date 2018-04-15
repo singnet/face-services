@@ -8,13 +8,13 @@ of faces.
 Initially, services will be implemented that support the following tasks:
 
 - *Face localization* - provides bounding boxes where faces are detected.
-- *Face landmark detection* - provides a set of face keypoints based on a keypoint model.
+- *Face landmark detection* - provides a set of face keypoints based on a landmark model.
 - *Face alignment* - transforms face (rotate, translates, and scales) to a template landmark layout.
 - *Face recognition* - return a vector representing the faces identity mapped to N-dimensional manifold.
 
-There are different techniques to solve these tasks, and the goal is provide multiple implementations so that
-upstream tasks can swap implementations depending on availability, price, their impact on reputation and performance,
-or other factors. To begin with, this is a simple wrapping of dlib and opencv algorithms.
+There are different techniques to solve these tasks. The goal is to provide multiple implementations of some of these,
+so that upstream tasks can swap implementations depending on availability, price, their impact on reputation and performance,
+or other factors. To begin with, this repository is mostly a wrapping of dlib and opencv algorithms. 
 
 ## Dependencies
 
@@ -40,7 +40,13 @@ Eventually all services will call each other via some RPC mechanism, but while a
 there is a `webcam_test.py` script.
 
 This will activate your webcam and overlay outputs from each stage of processing, run with `python webcam_test.py`
-from the conda `face-services` environment you created above.
+from the conda `face-services` environment you created above. It will open two windows, one with an overlay of the
+original webcam image, and a smaller one with the aligned and cropped face.
+
+There are several hot-keys you can use:
+- `l` - change landmark detection model.
+- `d` - change face detection model.
+- `q` - quit.
 
 ## Face Service Details
 
@@ -60,7 +66,9 @@ optionally return rgb image with bounding box annotations.
 
 ### Face landmark detection
 
-Implementations: dlib 68 point CNN, dlib 5 point CNN, clmtrack
+Implementations: [dlib 68 point CNN](https://github.com/davisking/dlib/blob/master/python_examples/face_landmark_detection.py),
+[dlib 5 point CNN](http://blog.dlib.net/2017/09/fast-multiclass-object-detection-in.html),
+possibly [clmtrack](https://github.com/auduno/clmtrackr) to show a js service working in conjunction with python/c++?
 
 Calls:
 - `get_landmark_models` -> no arguments, return list of landmark models, including description of each landmark,
@@ -74,10 +82,12 @@ Calls:
 Implementations: dlib `save_face_chips`, opencv `getAffineTransform` or `getPerspectiveTransform`.
 
 Calls:
-- `align_image` -> expects rgb image, landmarks in image, destination locations for landmarks, optional
+- `align_image` -> expects rgb image, landmarks in image, destination locations for landmarks, optionally
   specify type of transform and how to handle borders (mirror, zero, etc). Return aligned rgb image (with error?)
 
 ### Face recognition
+
+Implementations: [dlib CNN](https://github.com/davisking/dlib/blob/master/python_examples/face_recognition.py) 
 
 Calls:
 - `get_landmark_models` -> no arguments, return list of landmark models recognition algorithm uses for alignment, including
