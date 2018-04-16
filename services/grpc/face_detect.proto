@@ -1,0 +1,22 @@
+syntax = 'proto3';
+
+service FaceDetect {
+  rpc FindFace (stream ImageUploadRequest) returns (FaceDetections) {}
+}
+
+message ImageUploadRequest{
+  string image_type = 1;
+  bytes content = 2;
+}
+
+// The response message containing the greetings
+message FaceDetections {
+  repeated BoundingBox faces = 1;
+}
+
+message BoundingBox {
+    int32 x = 1;
+    int32 y = 2;
+    int32 w = 3;
+    int32 h = 4;
+}
