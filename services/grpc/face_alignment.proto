@@ -1,0 +1,19 @@
+syntax = 'proto3';
+
+import "services/grpc/face_common.proto";
+
+message FaceAlignmentHeader {
+    FaceLandmarks source = 1;
+    FaceLandmarks target = 2;
+}
+
+message FaceAlignmentRequest {
+    oneof header_or_chunk {
+        FaceAlignmentHeader header = 1;
+        ImageRGB image_chunk = 2;
+    }
+}
+
+service FaceAlignment {
+    rpc AlignFace (stream FaceAlignmentRequest) returns (stream ImageRGB) {};
+}

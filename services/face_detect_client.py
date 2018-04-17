@@ -3,14 +3,14 @@ import sys
 
 import services.grpc.face_detect_pb2
 import services.grpc.face_detect_pb2_grpc
-from services.grpc.face_common_pb2 import ImageUploadRequest
+from services.grpc.face_common_pb2 import ImageRGB
 
 def read_in_chunks(filename, chunk_size=1024*64):
     with open(filename, 'rb') as infile:
         while True:
             chunk = infile.read(chunk_size)
             if chunk:
-                yield ImageUploadRequest(content=chunk)
+                yield ImageRGB(content=chunk)
             else:
                 # The chunk was empty, which means we're at the end
                 # of the file

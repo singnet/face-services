@@ -4,7 +4,7 @@ import sys
 import services.grpc.face_landmarks_pb2
 import services.grpc.face_landmarks_pb2_grpc
 from services.grpc.face_landmarks_pb2 import FaceLandmarkHeader, FaceLandmarkRequest, Empty
-from services.grpc.face_common_pb2 import ImageUploadRequest, FaceDetections, BoundingBox
+from services.grpc.face_common_pb2 import ImageRGB, FaceDetections, BoundingBox
 
 def read_in_chunks(filename, model="68", chunk_size=1024*64):
     # This bounding box currently matches a local test image, remove once landmarks server knows how to query upstream
@@ -23,7 +23,7 @@ def read_in_chunks(filename, model="68", chunk_size=1024*64):
         while True:
             chunk = infile.read(chunk_size)
             if chunk:
-                yield FaceLandmarkRequest(image_chunk=ImageUploadRequest(content=chunk))
+                yield FaceLandmarkRequest(image_chunk=ImageRGB(content=chunk))
             else:
                 # The chunk was empty, which means we're at the end
                 # of the file

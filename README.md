@@ -84,7 +84,7 @@ Calls:
 Implementations: dlib `save_face_chips`, opencv `getAffineTransform` or `getPerspectiveTransform`.
 
 Calls:
-- `align_image` -> expects rgb image, landmarks in image, destination locations for landmarks, optionally
+- `align_face` -> expects rgb image, landmarks in image, destination locations for landmarks, optionally
   specify type of transform and how to handle borders (mirror, zero, etc). Return aligned rgb image (with error?)
 
 ### Face recognition

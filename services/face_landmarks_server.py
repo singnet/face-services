@@ -43,9 +43,9 @@ class FaceLandmarkServicer(services.grpc.face_landmarks_pb2_grpc.FaceLandmarkSer
     def GetLandmarkModels(self, request, context):
         models = [
             FaceLandmarkDescriptions(landmark_model="68", landmark_description=self.landmark68_descriptions),
-            FaceLandmarkDescriptions(landmark_model="68", landmark_description=self.landmark5_descriptions)
+            FaceLandmarkDescriptions(landmark_model="5", landmark_description=self.landmark5_descriptions)
         ]
-        return services.grpc.face_landmarks_pb2.FaceLandmarkModels(model=models)
+        return services.grpc.face_common_pb2.FaceLandmarkModels(model=models)
 
     def GetLandmarks(self, request_iterator, context):
         start_time = time.time()

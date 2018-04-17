@@ -1,6 +1,6 @@
 syntax = 'proto3';
 
-message ImageUploadRequest {
+message ImageRGB {
   bytes content = 1;
 }
 
@@ -31,10 +31,9 @@ message FaceLandmarkDescriptions
 {
     string landmark_model = 1;
     repeated string landmark_description = 2;
+    repeated Point2D landmark_avg = 3;
 }
 
-message FaceAlignmentTargets
-{
-    FaceLandmarks source = 1;
-    FaceLandmarks target = 2;
+message FaceLandmarkModels {
+    repeated FaceLandmarkDescriptions model = 1;
 }
