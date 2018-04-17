@@ -3,14 +3,14 @@ import sys
 
 import services.grpc.face_detect_pb2
 import services.grpc.face_detect_pb2_grpc
-from services.grpc.face_detect_pb2 import ImageUploadRequest
+from services.grpc.face_common_pb2 import ImageUploadRequest
 
 def read_in_chunks(filename, chunk_size=1024*64):
     with open(filename, 'rb') as infile:
         while True:
             chunk = infile.read(chunk_size)
             if chunk:
-                yield ImageUploadRequest(content=chunk, image_type=filename)
+                yield ImageUploadRequest(content=chunk)
             else:
                 # The chunk was empty, which means we're at the end
                 # of the file
@@ -24,7 +24,7 @@ def find_faces(stub, image_fn):
 def run(image_fn):
     channel = grpc.insecure_channel('localhost:50051')
     stub = services.grpc.face_detect_pb2_grpc.FaceDetectStub(channel)
-    print("-------------- GetFeature --------------")
+    print("-------------- FindFaces --------------")
     find_faces(stub, image_fn)
 
 

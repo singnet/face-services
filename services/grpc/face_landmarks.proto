@@ -1,0 +1,26 @@
+syntax = 'proto3';
+
+import "services/grpc/face_common.proto";
+
+message FaceLandmarkHeader {
+    string landmark_model = 1;
+    FaceDetections faces = 2;
+}
+
+message FaceLandmarkRequest {
+    oneof header_or_chunk {
+        FaceLandmarkHeader header = 1;
+        ImageUploadRequest image_chunk = 2;
+    }
+}
+
+message Empty {}
+
+message FaceLandmarkModels {
+    repeated FaceLandmarkDescriptions model = 1;
+}
+
+service FaceLandmark {
+    rpc GetLandmarks (stream FaceLandmarkRequest) returns (FaceLandmarks) {};
+    rpc GetLandmarkModels (Empty) returns (FaceLandmarkModels) {};
+}

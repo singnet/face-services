@@ -1,5 +1,5 @@
 import services.grpc.face_detect_pb2_grpc
-from services.grpc.face_detect_pb2 import BoundingBox
+from services.grpc.face_common_pb2 import BoundingBox
 import time
 import concurrent.futures as futures
 import grpc
@@ -18,24 +18,20 @@ face_detector_dlib_cnn = dlib.cnn_face_detection_model_v1(cnn_face_detector_path
 face_detector_opencv_haarcascade = cv2.CascadeClassifier(cascade_path)
 
 num_face_detectors = 3
-face_idx = 0
+face_idx = 2
 
 class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
     def FindFace(self, request_iterator, context):
         start_time = time.time()
 
         image_data = bytearray()
-        image_type = None
 
         for data in request_iterator:
             image_data.extend(bytes(data.content))
-            if data.image_type:
-                image_type = data.image_type
 
         img_bytes = io.BytesIO(image_data)
         img = ioimg.imread(img_bytes)
 
-        print(image_type)
         print("length of content %d" % len(image_data))
 
         # face detection
@@ -75,7 +71,7 @@ class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
         faces = []
         for d in dets:
             faces.append(BoundingBox(x=d.left(), y=d.top(), w=d.right() - d.left(), h=d.bottom() - d.top()))
-        return services.grpc.face_detect_pb2.FaceDetections(faces=faces)
+        return services.grpc.face_common_pb2.FaceDetections(face_bbox=faces)
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
