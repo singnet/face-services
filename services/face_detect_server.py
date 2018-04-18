@@ -8,6 +8,7 @@ import io
 
 import cv2
 import dlib
+import logging
 
 cnn_face_detector_path = "models/mmod_human_face_detector.dat"
 cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
@@ -20,6 +21,8 @@ face_detector_opencv_haarcascade = cv2.CascadeClassifier(cascade_path)
 num_face_detectors = 3
 face_idx = 2
 
+log = logging.getLogger(__package__ + "." + __name__)
+
 class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
     def FindFace(self, request_iterator, context):
         start_time = time.time()
@@ -31,8 +34,13 @@ class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
 
         img_bytes = io.BytesIO(image_data)
         img = ioimg.imread(img_bytes)
+        log.debug("Received image with shape %s" % str(img.shape))
 
-        print("length of content %d" % len(image_data))
+        # Drop alpha channel if it exists
+        if img.shape[-1] == 4:
+            img = img[:,:,:3]
+            log.debug("Dropping alpha channel from image")
+
 
         # face detection
         # TODO: use intermediate representation that includes confidence?
@@ -65,26 +73,26 @@ class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
                 # expand height by 10%
                 dets.append(dlib.rectangle(d.left(), d.top(), d.right(), d.bottom() - int(h / 10.0)))
 
-        elapsed_time = time.time() - start_time
-        print(elapsed_time)
-
         faces = []
         for d in dets:
             faces.append(BoundingBox(x=d.left(), y=d.top(), w=d.right() - d.left(), h=d.bottom() - d.top()))
         return services.grpc.face_common_pb2.FaceDetections(face_bbox=faces)
 
-def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+def serve(max_workers=10, blocking=True, port=50051):
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
     services.grpc.face_detect_pb2_grpc.add_FaceDetectServicer_to_server(
         FaceDetectServicer(), server)
-    server.add_insecure_port('[::]:50051')
+    server.add_insecure_port('[::]:%d' % port)
     server.start()
     _ONE_DAY_IN_SECONDS = 60 * 60 * 24
-    try:
-        while True:
-            time.sleep(_ONE_DAY_IN_SECONDS)
-    except KeyboardInterrupt:
-        server.stop(0)
+    if not blocking:
+        return server
+    else:
+        try:
+            while True:
+                time.sleep(_ONE_DAY_IN_SECONDS)
+        except KeyboardInterrupt:
+            server.stop(0)
 
 if __name__ == '__main__':
     serve()

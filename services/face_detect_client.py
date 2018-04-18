@@ -18,15 +18,14 @@ def read_in_chunks(filename, chunk_size=1024*64):
 
 def find_faces(stub, image_fn):
     img_iterator = read_in_chunks(image_fn)
-    faces = stub.FindFace(img_iterator)
-    print(faces)
+    return stub.FindFace(img_iterator)
 
 def run(image_fn):
     channel = grpc.insecure_channel('localhost:50051')
     stub = services.grpc.face_detect_pb2_grpc.FaceDetectStub(channel)
     print("-------------- FindFaces --------------")
-    find_faces(stub, image_fn)
-
+    faces = find_faces(stub, image_fn)
+    print(faces)
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
