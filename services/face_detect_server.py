@@ -10,22 +10,32 @@ import cv2
 import dlib
 import logging
 
-cnn_face_detector_path = "models/mmod_human_face_detector.dat"
-cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-
-# face detection/localization
-face_detector_dlib_hog = dlib.get_frontal_face_detector()
-face_detector_dlib_cnn = dlib.cnn_face_detection_model_v1(cnn_face_detector_path)
-face_detector_opencv_haarcascade = cv2.CascadeClassifier(cascade_path)
-
-num_face_detectors = 3
-face_idx = 2
 
 log = logging.getLogger(__package__ + "." + __name__)
 
+
 class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
+
+    cnn_face_detector_path = "models/mmod_human_face_detector.dat"
+    cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+
+    def __init__(self, detection_algorithm='haar_cascade'):
+        self.algorithm = detection_algorithm
+        if self.algorithm not in ['haar_cascade', 'dlib_hog', 'dlib_cnn']:
+            raise Exception("Unknown face detection algorithm used to initialise service")
+        log.debug("FaceDetectServicer created with algorithm %s" % (self.algorithm,))
+
+        self.face_detector = None
+
     def FindFace(self, request_iterator, context):
-        start_time = time.time()
+        # Would be faster to do this on initialisation, but unsure about grpc worker threads and thread-safety of
+        # dlib and opencv.
+        if self.algorithm == 'haar_cascade':
+            self.face_detector = cv2.CascadeClassifier(self.cascade_path)
+        elif self.algorithm == 'dlib_hog':
+            self.face_detector = dlib.get_frontal_face_detector()
+        elif self.algorithm == 'dlib_cnn':
+            self.face_detector = dlib.cnn_face_detection_model_v1(self.cnn_face_detector_path)
 
         image_data = bytearray()
 
@@ -41,12 +51,10 @@ class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
             img = img[:,:,:3]
             log.debug("Dropping alpha channel from image")
 
-
-        # face detection
-        # TODO: use intermediate representation that includes confidence?
-        if face_idx == 0:
+        faces = []
+        if self.algorithm == 'haar_cascade':
             gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-            faces = face_detector_opencv_haarcascade.detectMultiScale(
+            faces_det = self.face_detector.detectMultiScale(
                 gray,
                 scaleFactor=1.05,
                 minNeighbors=5,
@@ -56,14 +64,14 @@ class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
 
             dets = []
             # Convert to array of dlib rectangles
-            for (x, y, w, h) in faces:
+            for (x, y, w, h) in faces_det:
                 dets.append(dlib.rectangle(x, y, x + w, y + h))
 
-        elif face_idx == 1:
-            dets = face_detector_dlib_hog(img, 1)
+        elif self.algorithm == 'dlib_hog':
+            dets = self.face_detector(img, 1)
 
-        else:
-            cnn_dets = face_detector_dlib_cnn(img, 1)
+        elif self.algorithm == 'dlib_cnn':
+            cnn_dets = self.face_detector(img, 1)
             dets = []
             for cnn_d in cnn_dets:
                 # different return type because it includes confidence, get the rect
@@ -72,16 +80,18 @@ class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
                 # cnn max margin detector seems to cut off the chin and this confuses landmark predictor,
                 # expand height by 10%
                 dets.append(dlib.rectangle(d.left(), d.top(), d.right(), d.bottom() - int(h / 10.0)))
+        else:
+            return services.grpc.face_common_pb2.FaceDetections(face_bbox=faces)
 
-        faces = []
         for d in dets:
             faces.append(BoundingBox(x=d.left(), y=d.top(), w=d.right() - d.left(), h=d.bottom() - d.top()))
         return services.grpc.face_common_pb2.FaceDetections(face_bbox=faces)
 
-def serve(max_workers=10, blocking=True, port=50051):
+
+def serve(algorithm='haar_cascade', max_workers=10, blocking=True, port=50051):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
     services.grpc.face_detect_pb2_grpc.add_FaceDetectServicer_to_server(
-        FaceDetectServicer(), server)
+        FaceDetectServicer(algorithm), server)
     server.add_insecure_port('[::]:%d' % port)
     server.start()
     _ONE_DAY_IN_SECONDS = 60 * 60 * 24
@@ -93,6 +103,7 @@ def serve(max_workers=10, blocking=True, port=50051):
                 time.sleep(_ONE_DAY_IN_SECONDS)
         except KeyboardInterrupt:
             server.stop(0)
+
 
 if __name__ == '__main__':
     serve()
