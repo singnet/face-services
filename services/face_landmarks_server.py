@@ -5,6 +5,7 @@ import concurrent.futures as futures
 import grpc
 from skimage import io as ioimg
 import io
+import logging
 
 import cv2
 import dlib
@@ -17,6 +18,8 @@ landmark_predictors = {
     "68": dlib.shape_predictor(landmark68_predictor_path),
     "5": dlib.shape_predictor(landmark5_predictor_path),
 }
+
+log = logging.getLogger(__package__ + "." + __name__)
 
 class FaceLandmarkServicer(services.grpc.face_landmarks_pb2_grpc.FaceLandmarkServicer):
     landmark68_descriptions = (
@@ -62,23 +65,25 @@ class FaceLandmarkServicer(services.grpc.face_landmarks_pb2_grpc.FaceLandmarkSer
             else:
                 image_data.extend(bytes(data.image_chunk.content))
 
-        #print("header %s" % str(header))
-        #print("length of content %d" % len(image_data))
-
         img_bytes = io.BytesIO(image_data)
         img = ioimg.imread(img_bytes)
+
+        # Drop alpha channel if it exists
+        if img.shape[-1] == 4:
+            img = img[:, :, :3]
+            log.debug("Dropping alpha channel from image")
 
         if len(header.faces.face_bbox) == 0:
             # TODO make upstream call to face detect service.
             pass
 
+        points = []
         for bbox in header.faces.face_bbox:
             dlib_bbox = dlib.rectangle(bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h)
 
             detection_object = landmark_predictors[header.landmark_model](img, dlib_bbox)
             detected_landmarks = detection_object.parts()
 
-            points = []
             for p in detected_landmarks:
                 points.append(Point2D(x=p.x, y=p.y))
 
@@ -86,18 +91,21 @@ class FaceLandmarkServicer(services.grpc.face_landmarks_pb2_grpc.FaceLandmarkSer
         print(elapsed_time)
         return FaceLandmarks(landmark_model=header.landmark_model, point=points)
 
-def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+def serve(max_workers=10, blocking=True, port=50051):
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
     services.grpc.face_landmarks_pb2_grpc.add_FaceLandmarkServicer_to_server(
         FaceLandmarkServicer(), server)
-    server.add_insecure_port('[::]:50051')
+    server.add_insecure_port('[::]:%d' % port)
     server.start()
     _ONE_DAY_IN_SECONDS = 60 * 60 * 24
-    try:
-        while True:
-            time.sleep(_ONE_DAY_IN_SECONDS)
-    except KeyboardInterrupt:
-        server.stop(0)
+    if not blocking:
+        return server
+    else:
+        try:
+            while True:
+                time.sleep(_ONE_DAY_IN_SECONDS)
+        except KeyboardInterrupt:
+            server.stop(0)
 
 if __name__ == '__main__':
     serve()

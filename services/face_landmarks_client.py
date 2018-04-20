@@ -6,15 +6,8 @@ import services.grpc.face_landmarks_pb2_grpc
 from services.grpc.face_landmarks_pb2 import FaceLandmarkHeader, FaceLandmarkRequest, Empty
 from services.grpc.face_common_pb2 import ImageRGB, FaceDetections, BoundingBox
 
-def read_in_chunks(filename, model="68", chunk_size=1024*64):
-    # This bounding box currently matches a local test image, remove once landmarks server knows how to query upstream
-    # service
-    face_bbox = BoundingBox(**{
-        'x': 711,
-        'y': 525,
-        'w': 507,
-        'h': 557
-    })
+def read_in_chunks(filename, face_bbox, model="68", chunk_size=1024*64):
+    face_bbox = BoundingBox(**face_bbox)
     header = FaceLandmarkHeader(landmark_model=model, faces=FaceDetections(face_bbox=[face_bbox]))
     flm = FaceLandmarkRequest(header=header)
     yield flm
@@ -29,16 +22,40 @@ def read_in_chunks(filename, model="68", chunk_size=1024*64):
                 # of the file
                 return
 
-def get_face_landmarks(stub, image_fn):
-    model = "68"
-    img_iterator = read_in_chunks(image_fn, model=model)
+def get_face_landmarks(stub, image_fn, face_bbox, model="68"):
+    img_iterator = read_in_chunks(image_fn, face_bbox, model=model)
     face_landmarks = stub.GetLandmarks(img_iterator)
+    return face_landmarks
 
-    models = stub.GetLandmarkModels(Empty())
+def get_face_landmark_models(stub):
+    return stub.GetLandmarkModels(Empty())
+
+def get_landmark_names_for_model(stub, model):
+    models = get_face_landmark_models(stub)
     landmark_names = None
     for m in models.model:
         if m.landmark_model == model:
             landmark_names = m.landmark_description
+            break
+    return landmark_names
+
+def run(image_fn):
+    channel = grpc.insecure_channel('localhost:50051')
+    stub = services.grpc.face_landmarks_pb2_grpc.FaceLandmarkStub(channel)
+    print("-------------- GetLandmarks --------------")
+
+    # This bounding box currently matches a local test image, remove once landmarks server knows how to query upstream
+    # service
+    pregenerated_face_bbox = {
+        'x': 711,
+        'y': 525,
+        'w': 507,
+        'h': 557
+    }
+
+    model = '68'
+    face_landmarks = get_face_landmarks(stub, image_fn, pregenerated_face_bbox, model)
+    landmark_names = get_landmark_names_for_model(stub, model)
 
     if landmark_names is not None:
         for i, lm in enumerate(zip(landmark_names, face_landmarks.point)):
@@ -46,12 +63,6 @@ def get_face_landmarks(stub, image_fn):
     else:
         print("No descriptions")
         print(face_landmarks)
-
-def run(image_fn):
-    channel = grpc.insecure_channel('localhost:50051')
-    stub = services.grpc.face_landmarks_pb2_grpc.FaceLandmarkStub(channel)
-    print("-------------- GetLandmarks --------------")
-    get_face_landmarks(stub, image_fn)
 
 
 if __name__ == '__main__':

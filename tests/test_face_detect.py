@@ -1,18 +1,15 @@
 import unittest
 import logging
-import os.path
-import cv2
-import dlib
 
 import grpc
 import services.face_detect_server
-from services.face_detect_client import find_faces
 import services.grpc.face_detect_pb2_grpc
 
-from faceutils import render_debug_image
-
+from services.face_detect_client import find_faces
+from faceutils import render_face_detect_debug_image
 from tests.test_images import one_face, multiple_faces, no_faces
 
+log = logging.getLogger("test.face_detect")
 
 class BaseTestCase:
     class BaseTestFaceDetectGRPC(unittest.TestCase):
@@ -39,81 +36,84 @@ class TestFaceDetectGRPC_DlibCNN(BaseTestCase.BaseTestFaceDetectGRPC):
 
     def test_find_single_face(self):
         for img_fn in one_face:
-            logging.debug("Testing face detect %s on file with a single face %s" % (self.algorithm, img_fn,))
+            log.debug("Testing face detect %s on file with a single face %s" % (self.algorithm, img_fn,))
             result = find_faces(self.stub, img_fn)
+            log.debug(str(result.face_bbox))
             self.assertEqual(len(result.face_bbox), 1)
-            render_debug_image(self, img_fn, result)
+            render_face_detect_debug_image(self, img_fn, result)
 
     def test_find_multiple_faces(self):
         for img_fn in multiple_faces:
-            logging.debug("Testing face detect %s on file with multiple faces %s" % (self.algorithm, img_fn,))
+            log.debug("Testing face detect %s on file with multiple faces %s" % (self.algorithm, img_fn,))
             result = find_faces(self.stub, img_fn)
             self.assertGreater(len(result.face_bbox), 1)
-            logging.debug(str(result.face_bbox))
-            render_debug_image(self, img_fn, result)
+            log.debug(str(result.face_bbox))
+            render_face_detect_debug_image(self, img_fn, result)
 
     def test_find_no_faces(self):
         for img_fn in no_faces:
-            logging.debug("Testing face detect on file with no faces %s" % (img_fn,))
+            log.debug("Testing face detect on file with no faces %s" % (img_fn,))
             result = find_faces(self.stub, img_fn)
             self.assertEqual(len(result.face_bbox), 0)
-            logging.debug(str(result.face_bbox))
-            render_debug_image(self, img_fn, result)
+            log.debug(str(result.face_bbox))
+            render_face_detect_debug_image(self, img_fn, result)
 
 class TestFaceDetectGRPC_DlibHOG(BaseTestCase.BaseTestFaceDetectGRPC):
     algorithm = 'dlib_hog'
 
     def test_find_single_face(self):
         for img_fn in one_face:
-            logging.debug("Testing face detect %s on file with a single face %s" % (self.algorithm, img_fn,))
+            log.debug("Testing face detect %s on file with a single face %s" % (self.algorithm, img_fn,))
             result = find_faces(self.stub, img_fn)
+            log.debug("%s - %s - %s" % (self.algorithm, img_fn, str(result.face_bbox)))
             self.assertEqual(len(result.face_bbox), 1)
-            render_debug_image(self, img_fn, result)
+            render_face_detect_debug_image(self, img_fn, result)
 
     def test_find_multiple_faces(self):
         for img_fn in multiple_faces:
-            logging.debug("Testing face detect %s on file with multiple faces %s" % (self.algorithm, img_fn,))
+            log.debug("Testing face detect %s on file with multiple faces %s" % (self.algorithm, img_fn,))
             result = find_faces(self.stub, img_fn)
             self.assertGreater(len(result.face_bbox), 1)
-            logging.debug(str(result.face_bbox))
-            render_debug_image(self, img_fn, result)
+            log.debug("%s - %s - %s" % (self.algorithm, img_fn, str(result.face_bbox)))
+            render_face_detect_debug_image(self, img_fn, result)
 
     def test_find_no_faces(self):
         for img_fn in no_faces:
-            logging.debug("Testing face detect on file with no faces %s" % (img_fn,))
+            log.debug("Testing face detect on file with no faces %s" % (img_fn,))
             result = find_faces(self.stub, img_fn)
             self.assertEqual(len(result.face_bbox), 0)
-            logging.debug(str(result.face_bbox))
-            render_debug_image(self, img_fn, result)
+            log.debug("%s - %s - %s" % (self.algorithm, img_fn, str(result.face_bbox)))
+            render_face_detect_debug_image(self, img_fn, result)
 
 class TestFaceDetectGRPC_HaarCascade(BaseTestCase.BaseTestFaceDetectGRPC):
     algorithm = 'haar_cascade'
 
     def test_find_single_face(self):
         for img_fn in one_face:
-            logging.debug("Testing face detect %s on file with a single face %s" % (self.algorithm, img_fn,))
+            log.debug("Testing face detect %s on file with a single face %s" % (self.algorithm, img_fn,))
             result = find_faces(self.stub, img_fn)
+            log.debug(str(result.face_bbox))
             self.assertEqual(len(result.face_bbox), 1)
-            render_debug_image(self, img_fn, result)
+            render_face_detect_debug_image(self, img_fn, result)
 
     def test_find_multiple_faces(self):
         for img_fn in multiple_faces:
-            logging.debug("Testing face detect %s on file with multiple faces %s" % (self.algorithm, img_fn,))
+            log.debug("Testing face detect %s on file with multiple faces %s" % (self.algorithm, img_fn,))
             result = find_faces(self.stub, img_fn)
             if img_fn.endswith('classroom_in_tanzania.jpg'):
-                logging.debug("Haar cascade is known to fail on %s" % (img_fn,))
+                log.debug("Haar cascade is known to fail on %s" % (img_fn,))
             else:
                 self.assertGreater(len(result.face_bbox), 1)
-            logging.debug(str(result.face_bbox))
-            render_debug_image(self, img_fn, result)
+            log.debug(str(result.face_bbox))
+            render_face_detect_debug_image(self, img_fn, result)
 
     def test_find_no_faces(self):
         for img_fn in no_faces:
-            logging.debug("Testing face detect %s on file with no faces %s" % (self.algorithm, img_fn,))
+            log.debug("Testing face detect %s on file with no faces %s" % (self.algorithm, img_fn,))
             result = find_faces(self.stub, img_fn)
             self.assertEqual(len(result.face_bbox), 0)
-            logging.debug(str(result.face_bbox))
-            render_debug_image(self, img_fn, result)
+            log.debug(str(result.face_bbox))
+            render_face_detect_debug_image(self, img_fn, result)
 
 
 if __name__ == '__main__':
