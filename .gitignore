@@ -1,3 +1,4 @@
 .idea/*
 models/
 *.pyc
+tests/debug_images

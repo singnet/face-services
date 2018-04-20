@@ -6,6 +6,8 @@ import numpy as np
 import cv2
 import tempfile
 
+from faceutils import render_landmarks, render_bounding_boxes
+
 # external models
 landmark68_predictor_path = "models/shape_predictor_68_face_landmarks.dat"
 landmark5_predictor_path = "models/shape_predictor_5_face_landmarks.dat"
@@ -14,20 +16,6 @@ recognition_model_path = "models/dlib_face_recognition_resnet_model_v1.dat"
 cnn_face_detector_path = "models/mmod_human_face_detector.dat"
 cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 
-
-def show_landmarks(frame, detected_landmarks):
-    landmarks = np.matrix([[p.x, p.y] for p in detected_landmarks])
-    for idx, point in enumerate(landmarks):
-        pos = (point[0, 0], point[0, 1])
-
-        # annotate the positions
-        cv2.putText(frame, str(idx), pos,
-                    fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                    fontScale=0.4,
-                    color=(0, 0, 255))
-
-        # draw points on the landmark positions
-        cv2.circle(frame, pos, 3, color=(0, 255, 255))
 
 def query_capture(cap):
     #   0  CV_CAP_PROP_POS_MSEC Current position of the video file in milliseconds.
@@ -126,8 +114,8 @@ def detect_from_webcam(save_video):
 
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
+        dets = []
         # face detection
-        # TODO: use intermediate representation that includes confidence?
         if face_idx == 0:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             faces = face_detector_opencv_haarcascade.detectMultiScale(
@@ -137,18 +125,14 @@ def detect_from_webcam(save_video):
                 minSize=(100, 100),
                 flags=cv2.CASCADE_SCALE_IMAGE
             )
-
-            dets = []
             # Convert to array of dlib rectangles
             for (x, y, w, h) in faces:
                 dets.append(dlib.rectangle(x, y, x+w, y+h))
 
         elif face_idx == 1:
             dets = face_detector_dlib_hog(img, 1)
-
         else:
             cnn_dets = face_detector_dlib_cnn(img, 1)
-            dets = []
             for cnn_d in cnn_dets:
                 # different return type because it includes confidence, get the rect
                 d = cnn_d.rect
@@ -157,35 +141,28 @@ def detect_from_webcam(save_video):
                 # expand height by 10%
                 dets.append(dlib.rectangle(d.left(), d.top(), d.right(), d.bottom() - int(h / 10.0)))
 
-
-
         print("Number of faces detected: {}".format(len(dets)))
+
+        landmarks = [None] * len(dets)
         for i, d in enumerate(dets):
             #print("Detection {}, score: {}, face_type:{}".format(
             #    d, scores[i], idx[i]))
             #print("Detection {}: Left: {} Top: {} Right: {} Bottom: {}".format(
             #    i, d.left(), d.top(), d.right(), d.bottom()))
-            cv2.rectangle(frame, (d.left(), d.top()), (d.right(), d.bottom()), (0, 255, 0), 2)
-
             landmark_predictor = landmark_predictors[landmark_idx]
-
             detection_object = landmark_predictor(img, d)
 
             # This is a hack to get the aligned face image via the dlib API
             # It writes to a file that we have to read back
             # `compute_face_descriptor` recomputes the alignment and won't accept a differently aligned face
-
             dlib.save_face_chip(img, detection_object, temp_file_no_ext, chip_size, border)
-
 
             aligned_img = cv2.cvtColor(io.imread(temp_file), cv2.COLOR_RGB2BGR)
             if save_video:
                 videowriter_aligned.write(aligned_img)
             cv2.imshow("aligned", aligned_img)
 
-            detected_landmarks = detection_object.parts()
-            show_landmarks(frame, detected_landmarks)
-
+            landmarks[i] = detection_object.parts()
             face_descriptor = facerec.compute_face_descriptor(img, detection_object, 10)
 
             # TODO: this currently is just comparing to the last frame. Won't handle multiple faces.
@@ -194,6 +171,9 @@ def detect_from_webcam(save_video):
             new_identity = np.matrix(face_descriptor)
             print("Distance to last identity %.4f" % np.linalg.norm(last_identity - new_identity))
             last_identity = new_identity
+
+        render_bounding_boxes(frame, dets)
+        render_landmarks(frame, landmarks)
 
         cv2.imshow("Faces found", frame)
 
