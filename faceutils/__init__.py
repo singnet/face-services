@@ -46,9 +46,10 @@ def render_face_detect_debug_image(test, img_fn, detections):
     cv2.imwrite(debug_image_file_name(test, img_fn), image)
 
 
-def render_face_landmarks_debug_image(test, img_fn, landmark_predictions):
+def render_face_landmarks_debug_image(test, img_fn, result):
     if DEBUG_IMAGE_PATH is None:
         return
     image = cv2.imread(img_fn)
-    render_landmarks(image, [landmark_predictions.point])
+    for landmarks in result.landmarked_faces:
+        render_landmarks(image, [landmarks.point])
     cv2.imwrite(debug_image_file_name(test, img_fn), image)

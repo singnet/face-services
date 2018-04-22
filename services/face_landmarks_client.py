@@ -6,9 +6,11 @@ import services.grpc.face_landmarks_pb2_grpc
 from services.grpc.face_landmarks_pb2 import FaceLandmarkHeader, FaceLandmarkRequest, Empty
 from services.grpc.face_common_pb2 import ImageRGB, FaceDetections, BoundingBox
 
-def read_in_chunks(filename, face_bbox, model="68", chunk_size=1024*64):
-    face_bbox = BoundingBox(**face_bbox)
-    header = FaceLandmarkHeader(landmark_model=model, faces=FaceDetections(face_bbox=[face_bbox]))
+def read_in_chunks(filename, face_bboxes, model="68", chunk_size=1024*64):
+    bboxes = []
+    for bbox in face_bboxes:
+        bboxes.append(BoundingBox(**bbox))
+    header = FaceLandmarkHeader(landmark_model=model, faces=FaceDetections(face_bbox=bboxes))
     flm = FaceLandmarkRequest(header=header)
     yield flm
 
@@ -22,8 +24,8 @@ def read_in_chunks(filename, face_bbox, model="68", chunk_size=1024*64):
                 # of the file
                 return
 
-def get_face_landmarks(stub, image_fn, face_bbox, model="68"):
-    img_iterator = read_in_chunks(image_fn, face_bbox, model=model)
+def get_face_landmarks(stub, image_fn, face_bboxes, model="68"):
+    img_iterator = read_in_chunks(image_fn, face_bboxes, model=model)
     face_landmarks = stub.GetLandmarks(img_iterator)
     return face_landmarks
 
@@ -54,15 +56,16 @@ def run(image_fn):
     }
 
     model = '68'
-    face_landmarks = get_face_landmarks(stub, image_fn, pregenerated_face_bbox, model)
-    landmark_names = get_landmark_names_for_model(stub, model)
+    result = get_face_landmarks(stub, image_fn, [pregenerated_face_bbox], model)
+    for fl in result.landmarked_faces:
+        landmark_names = get_landmark_names_for_model(stub, model)
 
-    if landmark_names is not None:
-        for i, lm in enumerate(zip(landmark_names, face_landmarks.point)):
-            print("%d - %s: %d, %d" % (i, lm[0], lm[1].x, lm[1].y))
-    else:
-        print("No descriptions")
-        print(face_landmarks)
+        if landmark_names is not None:
+            for i, lm in enumerate(zip(landmark_names, fl.point)):
+                print("%d - %s: %d, %d" % (i, lm[0], lm[1].x, lm[1].y))
+        else:
+            print("No descriptions")
+            print(fl)
 
 
 if __name__ == '__main__':

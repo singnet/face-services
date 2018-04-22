@@ -1,5 +1,6 @@
 import services.grpc.face_landmarks_pb2_grpc
 from services.grpc.face_common_pb2 import BoundingBox, Point2D, FaceLandmarks, FaceLandmarkDescriptions
+from services.grpc.face_landmarks_pb2 import FaceLandmarkResponse
 import time
 import concurrent.futures as futures
 import grpc
@@ -77,8 +78,10 @@ class FaceLandmarkServicer(services.grpc.face_landmarks_pb2_grpc.FaceLandmarkSer
             # TODO make upstream call to face detect service.
             pass
 
-        points = []
+
+        face_landmarks = []
         for bbox in header.faces.face_bbox:
+            points = []
             dlib_bbox = dlib.rectangle(bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h)
 
             detection_object = landmark_predictors[header.landmark_model](img, dlib_bbox)
@@ -87,9 +90,11 @@ class FaceLandmarkServicer(services.grpc.face_landmarks_pb2_grpc.FaceLandmarkSer
             for p in detected_landmarks:
                 points.append(Point2D(x=p.x, y=p.y))
 
+            face_landmarks.append(FaceLandmarks(landmark_model=header.landmark_model, point=points))
+
         elapsed_time = time.time() - start_time
         print(elapsed_time)
-        return FaceLandmarks(landmark_model=header.landmark_model, point=points)
+        return FaceLandmarkResponse(landmarked_faces=face_landmarks)
 
 def serve(max_workers=10, blocking=True, port=50051):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))

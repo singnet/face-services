@@ -77,30 +77,35 @@ class BaseTestCase:
 
         def test_get_landmarks_single_face(self):
             for img_fn in one_face:
-                bbox = pre_calculated_faces[os.path.basename(img_fn)][0]
+                bboxes = pre_calculated_faces[os.path.basename(img_fn)]
                 logging.debug(
                     "Testing face landmark prediction %s on file with a single face %s" % (self.algorithm, img_fn,))
-                result = get_face_landmarks(self.stub, img_fn, bbox, model=self.algorithm)
-                self.assertEqual(len(result.point), int(self.algorithm))
+                result = get_face_landmarks(self.stub, img_fn, bboxes, model=self.algorithm)
+                self.assertEqual(len(result.landmarked_faces), len(bboxes))
+                self.assertEqual(len(result.landmarked_faces[0].point), int(self.algorithm))
                 render_face_landmarks_debug_image(self, img_fn, result)
 
         def test_get_landmarks_multiple_faces(self):
             for img_fn in multiple_faces:
-                # only grab the first face until api updated to support multiple landmark predictions at once
-                bbox = pre_calculated_faces[os.path.basename(img_fn)][0]
+                bboxes = pre_calculated_faces[os.path.basename(img_fn)]
                 logging.debug(
                     "Testing face landmark prediction %s on file with multiple faces %s" % (self.algorithm, img_fn,))
-                result = get_face_landmarks(self.stub, img_fn, bbox, model=self.algorithm)
-                self.assertEqual(len(result.point), int(self.algorithm))
+                result = get_face_landmarks(self.stub, img_fn, bboxes, model=self.algorithm)
+                self.assertEqual(len(result.landmarked_faces), len(bboxes))
+                for i in range(0, len(bboxes)):
+                    self.assertEqual(len(result.landmarked_faces[i].point), int(self.algorithm))
                 render_face_landmarks_debug_image(self, img_fn, result)
 
         def test_get_landmarks_no_faces(self):
             for img_fn in no_faces:
                 # When there is no face, then this checks things don't explode when we give it a face bbox with no face
-                bbox = list(pre_calculated_faces.values())[0][0]
+                bboxes = list(pre_calculated_faces.values())[0]
                 logging.debug("Testing face detect on file with no faces %s" % (img_fn,))
-                result = get_face_landmarks(self.stub, img_fn, bbox, model=self.algorithm)
-                self.assertEqual(len(result.point), int(self.algorithm))
+                result = get_face_landmarks(self.stub, img_fn, bboxes, model=self.algorithm)
+                # Should still have the right number of responses, even if they are meaningless
+                self.assertEqual(len(result.landmarked_faces), len(bboxes))
+                for i in range(0, len(bboxes)):
+                    self.assertEqual(len(result.landmarked_faces[i].point), int(self.algorithm))
                 render_face_landmarks_debug_image(self, img_fn, result)
 
 

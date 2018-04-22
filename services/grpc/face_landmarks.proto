@@ -14,9 +14,13 @@ message FaceLandmarkRequest {
     }
 }
 
+message FaceLandmarkResponse {
+    repeated FaceLandmarks landmarked_faces = 1;
+}
+
 message Empty {}
 
 service FaceLandmark {
-    rpc GetLandmarks (stream FaceLandmarkRequest) returns (FaceLandmarks) {};
+    rpc GetLandmarks (stream FaceLandmarkRequest) returns (FaceLandmarkResponse) {};
     rpc GetLandmarkModels (Empty) returns (FaceLandmarkModels) {};
 }
