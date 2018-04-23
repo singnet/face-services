@@ -3,7 +3,7 @@ syntax = 'proto3';
 import "services/grpc/face_common.proto";
 
 message FaceRecognitionHeader {
-    repeated FaceLandmarks face_landmarks = 1;
+    repeated BoundingBox faces = 1;
 }
 
 message FaceRecognitionRequest {
@@ -15,7 +15,7 @@ message FaceRecognitionRequest {
 
 message Empty {}
 
-message FaceRecognitionReponse {
+message FaceRecognitionResponse {
     repeated FaceIdentity identities = 1;
 }
 
@@ -24,7 +24,6 @@ message FaceIdentity {
 }
 
 service FaceRecognition {
-    rpc RecogniseFace (stream FaceRecognitionRequest) returns (FaceRecognitionReponse) {};
-    rpc RecogniseFacePrealigned (stream FaceRecognitionRequest) returns (FaceRecognitionReponse) {};
-    rpc GetLandmarkModels (Empty) returns (FaceLandmarkModels) {};
+    rpc RecogniseFace (stream FaceRecognitionRequest) returns (FaceRecognitionResponse) {};
+    rpc RecogniseFacePrealigned (stream FaceRecognitionRequest) returns (FaceRecognitionResponse) {};
 }
