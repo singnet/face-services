@@ -4,7 +4,8 @@ import "services/grpc/face_common.proto";
 
 message FaceAlignmentHeader {
     FaceLandmarks source = 1;
-    FaceLandmarks target = 2;
+    BoundingBox   source_bbox = 2;
+    FaceLandmarks target = 3;
 }
 
 message FaceAlignmentRequest {
