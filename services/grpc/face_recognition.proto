@@ -1,0 +1,29 @@
+syntax = 'proto3';
+
+import "services/grpc/face_common.proto";
+
+message FaceRecognitionHeader {
+    repeated BoundingBox faces = 1;
+}
+
+message FaceRecognitionRequest {
+    oneof header_or_chunk {
+        FaceRecognitionHeader header = 1;
+        ImageRGB image_chunk = 2;
+    }
+}
+
+message Empty {}
+
+message FaceRecognitionResponse {
+    repeated FaceIdentity identities = 1;
+}
+
+message FaceIdentity {
+    repeated float identity = 1;
+}
+
+service FaceRecognition {
+    rpc RecogniseFace (stream FaceRecognitionRequest) returns (FaceRecognitionResponse) {};
+    rpc RecogniseFacePrealigned (stream FaceRecognitionRequest) returns (FaceRecognitionResponse) {};
+}
