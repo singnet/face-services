@@ -13,8 +13,6 @@ message FaceRecognitionRequest {
     }
 }
 
-message Empty {}
-
 message FaceRecognitionResponse {
     repeated FaceIdentity identities = 1;
 }

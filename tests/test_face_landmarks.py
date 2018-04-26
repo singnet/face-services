@@ -16,7 +16,7 @@ from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated
 
 class BaseTestCase:
     class BaseTestFaceLandmarksGRPC(unittest.TestCase):
-        test_port = 50001
+        test_port = 50002
         server = None
 
         @classmethod
