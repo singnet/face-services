@@ -15,7 +15,7 @@ from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated
 
 
 class TestFaceRecognitionGRPC(unittest.TestCase):
-    test_port = 50001
+    test_port = 50004
     server = None
 
     @classmethod
@@ -38,7 +38,7 @@ class TestFaceRecognitionGRPC(unittest.TestCase):
             bboxes = pre_calculated_faces[os.path.basename(img_fn)]
             logging.debug(
                 "Testing face recognition on file with a single face %s" % (img_fn,))
-            result = recognise_face(self.stub, img_fn, dummy_src, bboxes, dummy_target)
+            result = recognise_face(self.stub, img_fn, bboxes)
             self.assertEqual(len(result.identities), len(bboxes))
 
     def test_recognise_multiple_faces(self):

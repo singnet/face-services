@@ -9,7 +9,7 @@ import io
 import cv2
 import dlib
 import logging
-
+import argparse
 
 log = logging.getLogger(__package__ + "." + __name__)
 
@@ -106,4 +106,9 @@ def serve(algorithm='haar_cascade', max_workers=10, blocking=True, port=50051):
 
 
 if __name__ == '__main__':
-    serve()
+    import sys
+
+    parser = argparse.ArgumentParser(prog=__file__)
+    parser.add_argument("--port", help="port to bind", default=50051, type=int, required=False)
+    args = parser.parse_args(sys.argv[1:])
+    serve(port=args.port)

@@ -52,7 +52,7 @@ class TestFaceDetectGRPC_DlibCNN(BaseTestCase.BaseTestFaceDetectGRPC):
 
     def test_find_no_faces(self):
         for img_fn in no_faces:
-            log.debug("Testing face detect on file with no faces %s" % (img_fn,))
+            log.debug("Testing face detect %s on file with no faces %s" % (self.algorithm, img_fn,))
             result = find_faces(self.stub, img_fn)
             self.assertEqual(len(result.face_bbox), 0)
             log.debug(str(result.face_bbox))
@@ -79,7 +79,7 @@ class TestFaceDetectGRPC_DlibHOG(BaseTestCase.BaseTestFaceDetectGRPC):
 
     def test_find_no_faces(self):
         for img_fn in no_faces:
-            log.debug("Testing face detect on file with no faces %s" % (img_fn,))
+            log.debug("Testing face detect %s on file with no faces %s" % (self.algorithm, img_fn,))
             result = find_faces(self.stub, img_fn)
             self.assertEqual(len(result.face_bbox), 0)
             log.debug("%s - %s - %s" % (self.algorithm, img_fn, str(result.face_bbox)))

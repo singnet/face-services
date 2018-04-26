@@ -26,13 +26,15 @@ conda activate face-services
 pip install -r requirements.txt
 ```
 
-You also need to download various pretrained models and generate the grpc code from the proto definitions
-(slashes for Windows OS, you'll need to fix for linux):
+You also need to download various pretrained models and generate the grpc code from the proto definitions:
 
 ```
 python fetch_models.py
-python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. services\grpc\face_detect.proto
+build_proto.bat
 ```
+
+This repo has been developed on Windows, there should be nothing preventing it working on Linux/OSX except some
+erroneous back-slashes in paths. If you run into any issues please report and I'll fix.
 
 ## Webcam test
 

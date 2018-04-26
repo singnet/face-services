@@ -13,17 +13,9 @@ from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated
 
 import numpy as np
 
-dummy_src = np.array([
-        [341, 186], [277, 181], [185, 176], [223, 178], [253, 236]], dtype='float32')
-dummy_target = np.array([
-        [0.8595674595992, 0.2134981538014],
-        [0.6460604764104, 0.2289674387677],
-        [0.1205750620789, 0.2137274526848],
-        [0.3340850613712, 0.2290642403242],
-        [0.4901123135679, 0.6277975316475]], dtype='float32')
 
 class TestFaceAlignmentGRPC(unittest.TestCase):
-    test_port = 50001
+    test_port = 50003
     server = None
 
     @classmethod
@@ -46,25 +38,25 @@ class TestFaceAlignmentGRPC(unittest.TestCase):
             bboxes = pre_calculated_faces[os.path.basename(img_fn)]
             logging.debug(
                 "Testing face alignment on file with a single face %s" % (img_fn,))
-            result = align_face(self.stub, img_fn, dummy_src, bboxes, dummy_target)
-            self.assertEqual(len(result.landmarked_faces), len(bboxes))
+            result = align_face(self.stub, img_fn, bboxes)
+            self.assertEqual(len(result), len(bboxes))
 
     def test_align_multiple_faces(self):
         for img_fn in multiple_faces:
             bboxes = pre_calculated_faces[os.path.basename(img_fn)]
             logging.debug(
                 "Testing face alignment on file with multiple faces %s" % (img_fn,))
-            result = align_face(self.stub, img_fn, source_bbox=bboxes)
-            self.assertEqual(len(result.landmarked_faces), len(bboxes))
+            result = align_face(self.stub, img_fn, source_bboxes=bboxes)
+            self.assertEqual(len(result), len(bboxes))
 
     def test_align_no_faces(self):
         for img_fn in no_faces:
             # When there is no face, then this checks things don't explode when we give it a face bbox with no face
             bboxes = list(pre_calculated_faces.values())[0]
             logging.debug("Testing face alignment on file with no faces %s" % (img_fn,))
-            result = align_face(self.stub, img_fn, source_bbox=bboxes)
+            result = align_face(self.stub, img_fn, source_bboxes=bboxes)
             # Should still have the right number of responses, even if they are meaningless
-            self.assertEqual(len(result.landmarked_faces), len(bboxes))
+            self.assertEqual(len(result), len(bboxes))
 
 
 if __name__ == '__main__':

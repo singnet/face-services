@@ -3,9 +3,10 @@ syntax = 'proto3';
 import "services/grpc/face_common.proto";
 
 message FaceAlignmentHeader {
-    FaceLandmarks source = 1;
-    BoundingBox   source_bbox = 2;
-    FaceLandmarks target = 3;
+    repeated BoundingBox   source_bboxes = 1;
+    // DLib can't currently allow arbitrary alignments
+    //repeated FaceLandmarks source = 2;
+    //FaceLandmarks target = 3;
 }
 
 message FaceAlignmentRequest {
@@ -15,6 +16,17 @@ message FaceAlignmentRequest {
     }
 }
 
+message FaceAlignmentResponseHeader {
+
+}
+
+message FaceAlignmentResponse {
+    oneof header_or_chunk {
+        FaceAlignmentResponseHeader header = 1;
+        ImageRGB image_chunk = 2;
+    }
+}
+
 service FaceAlignment {
-    rpc AlignFace (stream FaceAlignmentRequest) returns (stream ImageRGB) {};
+    rpc AlignFace (stream FaceAlignmentRequest) returns (stream FaceAlignmentResponse) {};
 }
