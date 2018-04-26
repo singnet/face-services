@@ -7,7 +7,7 @@ import grpc
 from skimage import io as ioimg
 import io
 import logging
-
+import argparse
 import cv2
 import dlib
 
@@ -113,4 +113,9 @@ def serve(max_workers=10, blocking=True, port=50051):
             server.stop(0)
 
 if __name__ == '__main__':
-    serve()
+    import sys
+
+    parser = argparse.ArgumentParser(prog=__file__)
+    parser.add_argument("--port", help="port to bind", default=50051, type=int, required=False)
+    args = parser.parse_args(sys.argv[1:])
+    serve(port=args.port)

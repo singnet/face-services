@@ -7,6 +7,7 @@ import grpc
 from skimage import io as ioimg
 import io
 import os
+import argparse
 import numpy as np
 
 import cv2
@@ -126,4 +127,8 @@ def serve(max_workers=10, blocking=True, port=50051):
 
 
 if __name__ == '__main__':
-    serve()
+    import sys
+    parser = argparse.ArgumentParser(prog=__file__)
+    parser.add_argument("--port", help="port to bind", default=50051, type=int, required=False)
+    args = parser.parse_args(sys.argv[1:])
+    serve(port=args.port)
