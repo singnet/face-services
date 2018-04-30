@@ -30,9 +30,7 @@ landmark_predictors = {
 
 log = logging.getLogger(__package__ + "." + __name__)
 
-
-class FaceLandmarkServicer(services.grpc.face_landmarks_pb2_grpc.FaceLandmarkServicer):
-    landmark68_descriptions = (
+landmark68_descriptions = (
             (["left of face"] * 7) +
             (["chin"] * 3) +
             (["right of face"] * 7) +
@@ -44,19 +42,35 @@ class FaceLandmarkServicer(services.grpc.face_landmarks_pb2_grpc.FaceLandmarkSer
             (["right eye"] * 6) +
             (["outer lips"] * 12) +
             (["inner lips"] * 8)
-    )
-    landmark5_descriptions = [
-        "outer left eye",
-        "inner left eye",
-        "end of nose",
-        "inner right eye",
-        "outer right eye"
-    ]
+)
+landmark5_descriptions = [
+    "outer left eye",
+    "inner left eye",
+    "end of nose",
+    "inner right eye",
+    "outer right eye"
+]
+
+
+def get_landmarks(img, bbox, model):
+    points = []
+    dlib_bbox = dlib.rectangle(bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h)
+
+    detection_object = landmark_predictors[model](img, dlib_bbox)
+    detected_landmarks = detection_object.parts()
+    for p in detected_landmarks:
+        points.append(Point2D(x=p.x, y=p.y))
+
+    return points
+
+
+class FaceLandmarkServicer(services.grpc.face_landmarks_pb2_grpc.FaceLandmarkServicer):
+
 
     def GetLandmarkModels(self, request, context):
         models = [
-            FaceLandmarkDescriptions(landmark_model="68", landmark_description=self.landmark68_descriptions),
-            FaceLandmarkDescriptions(landmark_model="5", landmark_description=self.landmark5_descriptions)
+            FaceLandmarkDescriptions(landmark_model="68", landmark_description=landmark68_descriptions),
+            FaceLandmarkDescriptions(landmark_model="5", landmark_description=landmark5_descriptions)
         ]
         return services.grpc.face_common_pb2.FaceLandmarkModels(model=models)
 
@@ -87,18 +101,9 @@ class FaceLandmarkServicer(services.grpc.face_landmarks_pb2_grpc.FaceLandmarkSer
             # TODO make upstream call to face detect service.
             pass
 
-
         face_landmarks = []
         for bbox in header.faces.face_bbox:
-            points = []
-            dlib_bbox = dlib.rectangle(bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h)
-
-            detection_object = landmark_predictors[header.landmark_model](img, dlib_bbox)
-            detected_landmarks = detection_object.parts()
-
-            for p in detected_landmarks:
-                points.append(Point2D(x=p.x, y=p.y))
-
+            points = get_landmarks(img, bbox, header.landmark_model)
             face_landmarks.append(FaceLandmarks(landmark_model=header.landmark_model, point=points))
 
         elapsed_time = time.time() - start_time
@@ -121,13 +126,29 @@ async def ping():
 
 @methods.add
 async def get_landmark_models(**kwargs):
-    pass
+    lm = kwargs.get("landmark_model", None)
+    if lm is None:
+        models = ["5", "68"]
+    else:
+        models = [lm]
+
+    response = {}
+    for m in models:
+        if m == "5":
+            response[m] = landmark5_descriptions
+        elif m == "68":
+            response[m] = landmark68_descriptions
+        else:
+            raise InvalidParams("Unknown landmark model")
+
+    return {'landmark_models': response}
 
 
 @methods.add
 async def get_landmarks(**kwargs):
     image = kwargs.get("image", None)
-    algorithm = kwargs.get("algorithm", "dlib_cnn")
+    lm = kwargs.get("landmark_model", "5")
+    bboxes = kwargs.get("face_bboxes", [])
 
     if image is None:
         raise InvalidParams("image is required")
@@ -136,9 +157,17 @@ async def get_landmarks(**kwargs):
     img_data = io.BytesIO(binary_image)
     img = ioimg.imread(img_data)
 
-    landmarks = []
+    face_landmarks = []
 
-    return {'landmarks': landmarks}
+    for bbox in bboxes:
+        bbox_pb = BoundingBox(**bbox)
+        points = get_landmarks(img, bbox_pb, lm)
+        face_landmarks.append({
+            'landmark_model': lm,
+            'points': [{'x': p.x, 'y': p.y} for p in points]
+        })
+
+    return {'landmarks': face_landmarks}
 
 
 async def handle(request):
