@@ -3,6 +3,7 @@ import subprocess
 import signal
 import time
 import sys
+import os
 import argparse
 
 from services import registry
@@ -17,8 +18,11 @@ def main():
 
     def handle_signal(signum, frame):
         for service, p in service_processes:
-            p.send_signal(signum)
-        for p in service_processes:
+            if sys.platform.startswith('win'):
+                p.kill()
+            else:
+                p.send_signal(signum)
+        for service, p in service_processes:
             p.wait()
         exit(0)
 
