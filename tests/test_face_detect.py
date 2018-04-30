@@ -56,6 +56,7 @@ class BaseTestCase:
         @classmethod
         def setUpClass(cls):
             cls.server = services.face_detect_server.serve(algorithm=cls.algorithm, max_workers=2, port=cls.test_port)
+            cls.server.start()
 
         @classmethod
         def tearDownClass(cls):

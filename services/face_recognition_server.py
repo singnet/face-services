@@ -1,15 +1,23 @@
+import sys
+import io
+import logging
+import base64
+import time
+
+import concurrent.futures as futures
+import grpc
+
+from aiohttp import web
+from jsonrpcserver.aio import methods
+from jsonrpcserver.exceptions import InvalidParams
+
+import cv2
+import dlib
+from skimage import io as ioimg
+
 import services.grpc.face_recognition_pb2_grpc
 from services.grpc.face_common_pb2 import BoundingBox, Point2D
 from services.grpc.face_recognition_pb2 import FaceRecognitionHeader, FaceIdentity, FaceRecognitionResponse, FaceRecognitionRequest
-import time
-import concurrent.futures as futures
-import grpc
-from skimage import io as ioimg
-import io
-import logging
-import cv2
-import dlib
-import argparse
 
 
 landmark5_predictor_path = "models/shape_predictor_5_face_landmarks.dat"
@@ -79,22 +87,42 @@ def serve(max_workers=10, blocking=True, port=50051):
     services.grpc.face_recognition_pb2_grpc.add_FaceRecognitionServicer_to_server(
         FaceRecognitionServicer(), server)
     server.add_insecure_port('[::]:%d' % port)
-    server.start()
-    _ONE_DAY_IN_SECONDS = 60 * 60 * 24
-    if not blocking:
-        return server
+    return server
+
+
+@methods.add
+async def ping():
+    return 'pong'
+
+
+@methods.add
+async def recognise_face(**kwargs):
+    image = kwargs.get("image", None)
+    algorithm = kwargs.get("algorithm", "dlib_cnn")
+
+    if image is None:
+        raise InvalidParams("image is required")
+
+    binary_image = base64.b64decode(image)
+    img_data = io.BytesIO(binary_image)
+    img = ioimg.imread(img_data)
+
+    face_identities = []
+
+    return {'face_identities': face_identities}
+
+
+async def handle(request):
+    request = await request.text()
+    response = await methods.dispatch(request)
+    if response.is_notification:
+        return web.Response()
     else:
-        try:
-            while True:
-                time.sleep(_ONE_DAY_IN_SECONDS)
-        except KeyboardInterrupt:
-            server.stop(0)
+        return web.json_response(response, status=response.http_status)
 
 
 if __name__ == '__main__':
-    import sys
-
-    parser = argparse.ArgumentParser(prog=__file__)
-    parser.add_argument("--port", help="port to bind", default=50051, type=int, required=False)
+    parser = services.common_parser(__file__)
     args = parser.parse_args(sys.argv[1:])
-    serve(port=args.port)
+    serve_args = {}
+    services.main_loop(serve, serve_args, handle, args)

@@ -1,20 +1,18 @@
 import io
-import time
 import sys
-import asyncio
 import logging
-import argparse
 import base64
 
 import grpc
+import concurrent.futures as futures
+
 from aiohttp import web
 from jsonrpcserver.aio import methods
 from jsonrpcserver.exceptions import InvalidParams
-import concurrent.futures as futures
-from skimage import io as ioimg
 
 import cv2
 import dlib
+from skimage import io as ioimg
 
 import services.grpc.face_detect_pb2_grpc
 from services.grpc.face_common_pb2 import BoundingBox
@@ -112,7 +110,6 @@ def serve(algorithm='haar_cascade', max_workers=10, port=50051):
     services.grpc.face_detect_pb2_grpc.add_FaceDetectServicer_to_server(
         FaceDetectServicer(algorithm), server)
     server.add_insecure_port('[::]:%d' % port)
-    server.start()
     return server
 
 
@@ -124,7 +121,6 @@ async def ping():
 @methods.add
 async def find_face(**kwargs):
     image = kwargs.get("image", None)
-    #image_type = kwargs.get("image_type", None)
     algorithm = kwargs.get("algorithm", "dlib_cnn")
 
     if image is None:
@@ -155,39 +151,8 @@ async def handle(request):
         return web.json_response(response, status=response.http_status)
 
 
-async def start_json_rpc(runner, host, port):
-    await runner.setup()
-    site = web.TCPSite(runner, str(host), port)
-    await site.start()
-
-    while True:
-        await asyncio.sleep(1)
-
-
-def create_web_app(loop):
-    app = web.Application(loop=loop)
-    app.router.add_post('/', handle)
-    return app
-
-
 if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser(prog=__file__)
-    parser.add_argument("--grpc-port", help="port to bind grpc service to", default=50051, type=int, required=False)
-    parser.add_argument("--json-rpc-port", help="port to bind jsonrpc service to", default=8080, type=int, required=False)
+    parser = services.common_parser(__file__)
     args = parser.parse_args(sys.argv[1:])
-
-    server = serve(port=args.grpc_port)
-
-    loop = asyncio.get_event_loop()
-    app = create_web_app(loop)
-    runner = web.AppRunner(app)
-
-    try:
-        loop.run_until_complete(start_json_rpc(runner, host="127.0.0.1", port=args.json_rpc_port))
-    except KeyboardInterrupt:
-        print("outta here")
-        server.stop(0)
-        loop.run_until_complete(runner.cleanup())
-
-    loop.close()
+    serve_args = {'algorithm': 'dlib_cnn'}
+    services.main_loop(serve, serve_args, handle, args)

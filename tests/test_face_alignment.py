@@ -20,7 +20,8 @@ class TestFaceAlignmentGRPC(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.server = services.face_alignment_server.serve(max_workers=2, port=cls.test_port, blocking=False)
+        cls.server = services.face_alignment_server.serve(max_workers=2, port=cls.test_port)
+        cls.server.start()
 
     @classmethod
     def tearDownClass(cls):
