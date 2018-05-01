@@ -64,14 +64,9 @@ class FaceRecognitionServicer(services.grpc.face_recognition_pb2_grpc.FaceRecogn
 
         face_identities = []
         for bbox in header.faces:
-            points = []
             dlib_bbox = dlib.rectangle(bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h)
 
             detection_object = landmark_predictor(img, dlib_bbox)
-            detected_landmarks = detection_object.parts()
-
-            for p in detected_landmarks:
-                points.append(Point2D(x=p.x, y=p.y))
 
             face_descriptor = facerec.compute_face_descriptor(img, detection_object, 10)
 
@@ -98,7 +93,7 @@ async def ping():
 @methods.add
 async def recognise_face(**kwargs):
     image = kwargs.get("image", None)
-    algorithm = kwargs.get("algorithm", "dlib_cnn")
+    face_bboxes = kwargs.get("faces", [])
 
     if image is None:
         raise InvalidParams("image is required")
@@ -108,6 +103,14 @@ async def recognise_face(**kwargs):
     img = ioimg.imread(img_data)
 
     face_identities = []
+    for b in face_bboxes:
+        bbox = BoundingBox(**b)
+        dlib_bbox = dlib.rectangle(bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h)
+
+        detection_object = landmark_predictor(img, dlib_bbox)
+        face_descriptor = facerec.compute_face_descriptor(img, detection_object, 10)
+
+        face_identities.append([x for x in face_descriptor])
 
     return {'face_identities': face_identities}
 
