@@ -1,19 +1,25 @@
-import services.grpc.face_alignment_pb2_grpc
-from services.grpc.face_alignment_pb2 import FaceAlignmentResponse, FaceAlignmentResponseHeader
-from services.grpc.face_common_pb2 import BoundingBox, ImageRGB
-import time
-import concurrent.futures as futures
-import grpc
-from skimage import io as ioimg
+import sys
 import io
 import os
-import argparse
-import numpy as np
+import base64
+import logging
+import tempfile
+
+import concurrent.futures as futures
+import grpc
+
+from aiohttp import web
+from jsonrpcserver.aio import methods
+from jsonrpcserver.exceptions import InvalidParams
 
 import cv2
 import dlib
-import logging
-import tempfile
+from skimage import io as ioimg
+
+import services.grpc.face_alignment_pb2_grpc
+from services.grpc.face_alignment_pb2 import FaceAlignmentResponse, FaceAlignmentResponseHeader
+from services.grpc.face_common_pb2 import BoundingBox, ImageRGB
+
 
 log = logging.getLogger(__package__ + "." + __name__)
 
@@ -31,6 +37,46 @@ landmark_predictors = {
     "68": dlib.shape_predictor(landmark68_predictor_path),
     "5": dlib.shape_predictor(landmark5_predictor_path),
 }
+
+
+def do_alignment(img, bbox):
+    fh, temp_file = tempfile.mkstemp('.jpg')
+    os.close(fh)
+    temp_file_no_ext = ".".join(temp_file.rsplit('.')[:-1])
+
+    d = dlib.rectangle(bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h)
+
+    # num_pts = len(source_pts)
+    num_pts = 5
+    try:
+        landmark_predictor = landmark_predictors[str(num_pts)]
+    except KeyError:
+        raise Exception("Incorrect number of landmarks")
+
+    detection_object = landmark_predictor(img, d)
+
+    chip_size = 150
+    border = 0.2
+    dlib.save_face_chip(img, detection_object, temp_file_no_ext, chip_size, border)
+
+    # Playing with OpenCVs geometric transforms - they don't work out of the box
+    # due to faces not being a plane.
+    # sample_idx = np.random.choice(source_pts.shape[0], 4, replace=False)
+    # sample_source_pts = source_pts[sample_idx, :]
+    # sample_target_pts = target_pts[sample_idx, :]
+
+    # M = cv2.getPerspectiveTransform(sample_source_pts, sample_target_pts)
+    # dst_img = cv2.warpPerspective(img, M, (300, 300))
+
+    # H = cv2.findHomography(source_pts, target_pts, cv2.CV_RANSAC)
+    # dst_img = cv2.warpPerspective(img, H, (300, 300))
+
+    aligned_img = cv2.cvtColor(ioimg.imread(temp_file), cv2.COLOR_RGB2BGR)
+    os.remove(temp_file)
+
+    ret, buf = cv2.imencode('.jpg', aligned_img)
+    return buf.tobytes()
+
 
 class FaceAlignmentServicer(services.grpc.face_alignment_pb2_grpc.FaceAlignmentServicer):
 
@@ -58,47 +104,11 @@ class FaceAlignmentServicer(services.grpc.face_alignment_pb2_grpc.FaceAlignmentS
             img = img[:,:,:3]
             log.debug("Dropping alpha channel from image")
 
-        fh, temp_file = tempfile.mkstemp('.jpg')
-        os.close(fh)
-        temp_file_no_ext = ".".join(temp_file.rsplit('.')[:-1])
-
         #source_pts = np.float32([[p.x, p.y] for p in header.source.point])
         #target_pts = np.float32([[p.x, p.y] for p in header.target.point])
 
         for bbox in header.source_bboxes:
-
-            d = dlib.rectangle(bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h)
-
-            #num_pts = len(source_pts)
-            num_pts = 5
-            try:
-                landmark_predictor = landmark_predictors[str(num_pts)]
-            except KeyError:
-                raise Exception("Incorrect number of landmarks")
-
-            detection_object = landmark_predictor(img, d)
-
-            chip_size = 150
-            border = 0.2
-            dlib.save_face_chip(img, detection_object, temp_file_no_ext, chip_size, border)
-
-            # Playing with OpenCVs geometric transforms - they don't work out of the box
-            # due to faces not being a plane.
-            #sample_idx = np.random.choice(source_pts.shape[0], 4, replace=False)
-            #sample_source_pts = source_pts[sample_idx, :]
-            #sample_target_pts = target_pts[sample_idx, :]
-
-            #M = cv2.getPerspectiveTransform(sample_source_pts, sample_target_pts)
-            #dst_img = cv2.warpPerspective(img, M, (300, 300))
-
-            #H = cv2.findHomography(source_pts, target_pts, cv2.CV_RANSAC)
-            #dst_img = cv2.warpPerspective(img, H, (300, 300))
-
-            aligned_img = cv2.cvtColor(ioimg.imread(temp_file), cv2.COLOR_RGB2BGR)
-
-            ret, buf = cv2.imencode('.jpg', aligned_img)
-            raw_dst_img = buf.tobytes()
-
+            raw_dst_img = do_alignment(img, bbox)
             chunk_size = 1024 * 64
 
             yield FaceAlignmentResponse(header=FaceAlignmentResponseHeader())
@@ -106,29 +116,52 @@ class FaceAlignmentServicer(services.grpc.face_alignment_pb2_grpc.FaceAlignmentS
             for i in range(0, len(raw_dst_img), chunk_size):
                 yield FaceAlignmentResponse(image_chunk=ImageRGB(content=raw_dst_img[i:i + chunk_size]))
 
-        os.remove(temp_file)
 
-
-def serve(max_workers=10, blocking=True, port=50051):
+def serve(max_workers=10, port=50051):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
     services.grpc.face_alignment_pb2_grpc.add_FaceAlignmentServicer_to_server(
         FaceAlignmentServicer(), server)
     server.add_insecure_port('[::]:%d' % port)
-    server.start()
-    _ONE_DAY_IN_SECONDS = 60 * 60 * 24
-    if not blocking:
-        return server
+    return server
+
+
+@methods.add
+async def ping():
+    return 'pong'
+
+
+@methods.add
+async def align_face(**kwargs):
+    image = kwargs.get("image", None)
+    source_bboxes = kwargs.get("source_bboxes", [])
+
+    if image is None:
+        raise InvalidParams("image is required")
+
+    binary_image = base64.b64decode(image)
+    img_data = io.BytesIO(binary_image)
+    img = ioimg.imread(img_data)
+
+    face_images = []
+    for bbox in source_bboxes:
+        b = BoundingBox(**bbox)
+        raw_dst_img = do_alignment(img, b)
+        face_images.append(base64.b64encode(raw_dst_img).decode('ascii'))
+
+    return {'aligned_faces': face_images}
+
+
+async def handle(request):
+    request = await request.text()
+    response = await methods.dispatch(request)
+    if response.is_notification:
+        return web.Response()
     else:
-        try:
-            while True:
-                time.sleep(_ONE_DAY_IN_SECONDS)
-        except KeyboardInterrupt:
-            server.stop(0)
+        return web.json_response(response, status=response.http_status)
 
 
 if __name__ == '__main__':
-    import sys
-    parser = argparse.ArgumentParser(prog=__file__)
-    parser.add_argument("--port", help="port to bind", default=50051, type=int, required=False)
+    parser = services.common_parser(__file__)
     args = parser.parse_args(sys.argv[1:])
-    serve(port=args.port)
+    serve_args = {}
+    services.main_loop(serve, serve_args, handle, args)

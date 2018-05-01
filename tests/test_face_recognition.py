@@ -12,6 +12,40 @@ import numpy as np
 
 from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated_faces
 
+from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
+from aiohttp import web
+
+
+class TestFaceRecognitionJSONRPC(AioHTTPTestCase):
+
+    async def get_application(self):
+        app = web.Application()
+        app.router.add_post('/', services.face_recognition_server.handle)
+        return app
+
+    @unittest_run_loop
+    async def test_recognise_face(self):
+        import base64
+        img_fn = one_face[0]
+        with open(img_fn, "rb") as f:
+            img_base64 = base64.b64encode(f.read()).decode('ascii')
+
+        rpc_dict = {
+            "jsonrpc": "2.0",
+            "method": "recognise_face",
+            "id": "1",
+            "params": {
+                "faces": pre_calculated_faces[os.path.basename(img_fn)],
+                "image": img_base64
+            }
+        }
+
+        resp = await self.client.post('/', json=rpc_dict)
+        assert resp.status == 200
+        json = await resp.json()
+        assert "face_identities" in json['result']
+        assert len(json['result']['face_identities']) == 1
+        assert len(json['result']['face_identities'][0]) == 128
 
 
 class TestFaceRecognitionGRPC(unittest.TestCase):
@@ -20,7 +54,8 @@ class TestFaceRecognitionGRPC(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.server = services.face_recognition_server.serve(max_workers=2, port=cls.test_port, blocking=False)
+        cls.server = services.face_recognition_server.serve(max_workers=2, port=cls.test_port)
+        cls.server.start()
 
     @classmethod
     def tearDownClass(cls):

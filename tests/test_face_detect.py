@@ -9,7 +9,41 @@ from services.face_detect_client import find_faces
 from faceutils import render_face_detect_debug_image
 from tests.test_images import one_face, multiple_faces, no_faces
 
+from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
+from aiohttp import web
+
 log = logging.getLogger("test.face_detect")
+
+
+class TestFaceDetectJSONRPC(AioHTTPTestCase):
+
+    async def get_application(self):
+        app = web.Application()
+        app.router.add_post('/', services.face_detect_server.handle)
+        return app
+
+    @unittest_run_loop
+    async def test_find_face(self):
+        import base64
+        with open(one_face[0], "rb") as f:
+            img_base64 = base64.b64encode(f.read()).decode('ascii')
+
+        rpc_dict = {
+            "jsonrpc": "2.0",
+            "method": "find_face",
+            "id": "1",
+            "params": {
+                "algorithm": "dlib_hog",
+                "image": img_base64
+            }
+        }
+
+        resp = await self.client.post('/', json=rpc_dict)
+        assert resp.status == 200
+        json = await resp.json()
+        print(json)
+        assert "faces" in json['result']
+
 
 class BaseTestCase:
     class BaseTestFaceDetectGRPC(unittest.TestCase):
@@ -18,7 +52,8 @@ class BaseTestCase:
 
         @classmethod
         def setUpClass(cls):
-            cls.server = services.face_detect_server.serve(algorithm=cls.algorithm, max_workers=2, port=cls.test_port, blocking=False)
+            cls.server = services.face_detect_server.serve(algorithm=cls.algorithm, max_workers=2, port=cls.test_port)
+            cls.server.start()
 
         @classmethod
         def tearDownClass(cls):
