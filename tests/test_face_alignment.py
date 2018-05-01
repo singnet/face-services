@@ -1,8 +1,11 @@
 import unittest
 import logging
 import os.path
+import io
+
 import cv2
 import dlib
+from skimage import io as ioimg
 
 import grpc
 import services.face_alignment_server
@@ -11,7 +14,43 @@ import services.grpc.face_alignment_pb2_grpc
 
 from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated_faces
 
-import numpy as np
+from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
+from aiohttp import web
+
+
+class TestFaceAlignmentJSONRPC(AioHTTPTestCase):
+
+    async def get_application(self):
+        app = web.Application()
+        app.router.add_post('/', services.face_alignment_server.handle)
+        return app
+
+    @unittest_run_loop
+    async def test_align_face(self):
+        import base64
+        img_fn = one_face[0]
+        with open(img_fn, "rb") as f:
+            img_base64 = base64.b64encode(f.read()).decode('ascii')
+
+        rpc_dict = {
+            "jsonrpc": "2.0",
+            "method": "align_face",
+            "id": "1",
+            "params": {
+                "source_bboxes": pre_calculated_faces[os.path.basename(img_fn)],
+                "image": img_base64
+            }
+        }
+
+        resp = await self.client.post('/', json=rpc_dict)
+        assert resp.status == 200
+        json = await resp.json()
+        assert "aligned_faces" in json['result']
+        assert len(json['result']['aligned_faces']) == 1
+        binary_image = base64.b64decode(json['result']['aligned_faces'][0])
+        img_data = io.BytesIO(binary_image)
+        img = ioimg.imread(img_data)
+        assert img.shape == (150, 150, 3)
 
 
 class TestFaceAlignmentGRPC(unittest.TestCase):

@@ -52,7 +52,7 @@ landmark5_descriptions = [
 ]
 
 
-def get_landmarks(img, bbox, model):
+def landmark_finder(img, bbox, model):
     points = []
     dlib_bbox = dlib.rectangle(bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h)
 
@@ -103,11 +103,11 @@ class FaceLandmarkServicer(services.grpc.face_landmarks_pb2_grpc.FaceLandmarkSer
 
         face_landmarks = []
         for bbox in header.faces.face_bbox:
-            points = get_landmarks(img, bbox, header.landmark_model)
+            points = landmark_finder(img, bbox, header.landmark_model)
             face_landmarks.append(FaceLandmarks(landmark_model=header.landmark_model, point=points))
 
         elapsed_time = time.time() - start_time
-        print(elapsed_time)
+        log.debug("Completed face landmark detection request in %.3fs" % elapsed_time)
         return FaceLandmarkResponse(landmarked_faces=face_landmarks)
 
 
@@ -161,7 +161,7 @@ async def get_landmarks(**kwargs):
 
     for bbox in bboxes:
         bbox_pb = BoundingBox(**bbox)
-        points = get_landmarks(img, bbox_pb, lm)
+        points = landmark_finder(img, bbox_pb, lm)
         face_landmarks.append({
             'landmark_model': lm,
             'points': [{'x': p.x, 'y': p.y} for p in points]

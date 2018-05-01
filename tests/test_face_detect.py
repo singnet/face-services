@@ -18,15 +18,12 @@ log = logging.getLogger("test.face_detect")
 class TestFaceDetectJSONRPC(AioHTTPTestCase):
 
     async def get_application(self):
-        """
-        Override the get_app method to return your application.
-        """
         app = web.Application()
         app.router.add_post('/', services.face_detect_server.handle)
         return app
 
     @unittest_run_loop
-    async def test_example(self):
+    async def test_find_face(self):
         import base64
         with open(one_face[0], "rb") as f:
             img_base64 = base64.b64encode(f.read()).decode('ascii')

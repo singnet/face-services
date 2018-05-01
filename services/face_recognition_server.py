@@ -78,11 +78,11 @@ class FaceRecognitionServicer(services.grpc.face_recognition_pb2_grpc.FaceRecogn
             face_identities.append(FaceIdentity(identity=face_descriptor))
 
         elapsed_time = time.time() - start_time
-        print(elapsed_time)
+        log.debug("Completed face recognition request in %.3fs" % elapsed_time)
         return FaceRecognitionResponse(identities=face_identities)
 
 
-def serve(max_workers=10, blocking=True, port=50051):
+def serve(max_workers=10, port=50051):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
     services.grpc.face_recognition_pb2_grpc.add_FaceRecognitionServicer_to_server(
         FaceRecognitionServicer(), server)
