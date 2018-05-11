@@ -10,9 +10,12 @@ from services import registry
 
 
 def main():
-    #parser = argparse.ArgumentParser(prog=__file__)
-    #parser.add_argument("--daemon-config-path", help="Path to daemon configuration file", required=False)
-    #args = parser.parse_args(sys.argv[1:])
+    parser = argparse.ArgumentParser(prog=__file__)
+    parser.add_argument("--daemon-config-path",
+                        help="Path to daemon configuration file, without config it won't be started",
+                        required=False
+                        )
+    args = parser.parse_args(sys.argv[1:])
 
     service_processes = []
 
@@ -24,6 +27,12 @@ def main():
                 p.send_signal(signum)
         for service, p in service_processes:
             p.wait()
+        if snetd_process is not None:
+            if sys.platform.startswith('win'):
+                snetd_process.kill()
+            else:
+                snetd_process.send_signal(signum)
+            snetd_process.wait()
         exit(0)
 
     signal.signal(signal.SIGTERM, handle_signal)
@@ -36,13 +45,24 @@ def main():
         'services.face_alignment_server', 'services.face_recognition_server'
     ]
 
+    snetd_process = start_snetd(root_path, args.daemon_config_path)
     service_processes = start_face_services(root_path, service_modules)
 
     while True:
+        if snetd_process is not None and snetd_process.poll() is not None:
+            snetd_process = start_snetd(root_path, args.daemon_config_path)
         for i, (service_module, service_p) in enumerate(service_processes):
             if service_p.poll() is not None:
                 service_processes[i] = start_face_services(root_path, [service_module])[0]
         time.sleep(5)
+
+
+def start_snetd(cwd, daemon_config_path=None):
+    cmd = ["snetd"]
+    if daemon_config_path is not None:
+        cmd.extend(["--config-path", daemon_config_path])
+        return subprocess.Popen(cmd, cwd=cwd)
+    return None
 
 
 def start_face_services(cwd, service_modules):
