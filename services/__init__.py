@@ -8,20 +8,20 @@ from aiohttp import web
 
 registry = {
     'face_detect_server': {
-        'grpc': 50051,
-        'jsonrpc': 50052,
+        'grpc': 6001,
+        'jsonrpc': 6101,
     },
     'face_landmarks_server': {
-        'grpc': 50053,
-        'jsonrpc': 50054,
+        'grpc': 6002,
+        'jsonrpc': 6102,
     },
     'face_alignment_server': {
-        'grpc': 50055,
-        'jsonrpc': 50056,
+        'grpc': 6003,
+        'jsonrpc': 6103,
     },
     'face_recognition_server': {
-        'grpc': 50057,
-        'jsonrpc': 50058,
+        'grpc': 6004,
+        'jsonrpc': 6104,
     },
 }
 

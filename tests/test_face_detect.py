@@ -47,7 +47,7 @@ class TestFaceDetectJSONRPC(AioHTTPTestCase):
 
 class BaseTestCase:
     class BaseTestFaceDetectGRPC(unittest.TestCase):
-        test_port = 50001
+        test_port = 6001
         server = None
 
         @classmethod
@@ -66,8 +66,10 @@ class BaseTestCase:
         def tearDown(self):
             pass
 
+
 class TestFaceDetectGRPC_DlibCNN(BaseTestCase.BaseTestFaceDetectGRPC):
     algorithm = 'dlib_cnn'
+    test_port = 6001
 
     def test_find_single_face(self):
         for img_fn in one_face:
@@ -92,9 +94,11 @@ class TestFaceDetectGRPC_DlibCNN(BaseTestCase.BaseTestFaceDetectGRPC):
             self.assertEqual(len(result.face_bbox), 0)
             log.debug(str(result.face_bbox))
             render_face_detect_debug_image(self, img_fn, result)
+
 
 class TestFaceDetectGRPC_DlibHOG(BaseTestCase.BaseTestFaceDetectGRPC):
     algorithm = 'dlib_hog'
+    test_port = 6002
 
     def test_find_single_face(self):
         for img_fn in one_face:
@@ -120,8 +124,10 @@ class TestFaceDetectGRPC_DlibHOG(BaseTestCase.BaseTestFaceDetectGRPC):
             log.debug("%s - %s - %s" % (self.algorithm, img_fn, str(result.face_bbox)))
             render_face_detect_debug_image(self, img_fn, result)
 
+
 class TestFaceDetectGRPC_HaarCascade(BaseTestCase.BaseTestFaceDetectGRPC):
     algorithm = 'haar_cascade'
+    test_port = 6003
 
     def test_find_single_face(self):
         for img_fn in one_face:

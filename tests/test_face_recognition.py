@@ -49,7 +49,7 @@ class TestFaceRecognitionJSONRPC(AioHTTPTestCase):
 
 
 class TestFaceRecognitionGRPC(unittest.TestCase):
-    test_port = 50004
+    test_port = 6008
     server = None
 
     @classmethod

@@ -54,7 +54,7 @@ class TestFaceAlignmentJSONRPC(AioHTTPTestCase):
 
 
 class TestFaceAlignmentGRPC(unittest.TestCase):
-    test_port = 50003
+    test_port = 6007
     server = None
 
     @classmethod
