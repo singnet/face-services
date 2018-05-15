@@ -68,7 +68,7 @@ class TestFaceLandmarksJSONRPC(AioHTTPTestCase):
 
 class BaseTestCase:
     class BaseTestFaceLandmarksGRPC(unittest.TestCase):
-        test_port = 50002
+        test_port = 6005
         server = None
 
         @classmethod
@@ -123,11 +123,11 @@ class BaseTestCase:
 
 class TestFaceLandmarksGRPC_Dlib68(BaseTestCase.BaseTestFaceLandmarksGRPC):
     algorithm = '68'
-
+    test_port = 6005
 
 class TestFaceLandmarksGRPC_Dlib5(BaseTestCase.BaseTestFaceLandmarksGRPC):
     algorithm = '5'
-
+    test_port = 6006
 
 if __name__ == '__main__':
     unittest.main()

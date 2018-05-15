@@ -55,7 +55,7 @@ def face_detect(img, detector, algorithm):
         dets = detector(img, 1)
 
     elif algorithm == 'dlib_cnn':
-        cnn_dets = detector(img, 1)
+        cnn_dets = detector(img, 0)
         for cnn_d in cnn_dets:
             # different return type because it includes confidence, get the rect
             d = cnn_d.rect
@@ -99,6 +99,7 @@ class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
 
         dets = face_detect(img, self.face_detector, self.algorithm)
 
+        self.face_detector = None
         faces = []
         for d in dets:
             faces.append(BoundingBox(x=d.left(), y=d.top(), w=d.right() - d.left(), h=d.bottom() - d.top()))
