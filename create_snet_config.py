@@ -20,12 +20,13 @@ config_template = {
     "PRIVATE_KEY": None,
 }
 
+
 agent_contracts = {
     "kovan": {
-        "face_detect_server": "0xA",
-        "face_landmarks_server": "0xB",
-        "face_alignment_server": "0xC",
-        "face_recognition_server": "0xD",
+        "face_detect_server": "0x4cBe33Aa28eBBbFAa7d98Fa1c65af2FEf6885EF2",
+        "face_landmarks_server": "0x88DeC961e30F973b6DeDbae35754a3c557380BEE",
+        "face_alignment_server": "0xCB58410EE3B8E99ABd9774aB98951680E637b5F3",
+        "face_recognition_server": "0x8f3c5F4B522803DA8B07a257b6a558f61100452C",
     }
 }
 
@@ -36,6 +37,8 @@ def make_config(service, snetd_port, local_jsonrpc_port, contract_address, priva
     service_config['PASSTHROUGH_ENDPOINT'] = "http://localhost:" + str(local_jsonrpc_port)
     service_config['AGENT_CONTRACT_ADDRESS'] = contract_address
     service_config['PRIVATE_KEY'] = private_key
+    if private_key is None:
+        service_config['BLOCKCHAIN_ENABLED'] = False
 
     config_file = pathlib.Path('config') / ('snetd_' + service + '_config.json')
     os.makedirs("config", exist_ok=True)
@@ -70,6 +73,8 @@ def main():
     if args.network != 'kovan':
         raise Exception("Only kovan network currently supported")
     private_key = getpass.getpass('Private key used for creating agent contract:')
+    if not private_key:
+        private_key = None
 
     service_to_arg = {
         'face_detect_server': 'detect_address',

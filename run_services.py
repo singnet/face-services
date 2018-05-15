@@ -23,13 +23,16 @@ def main():
         for service, p, snetd_conf, snetd_p in service_processes:
             if sys.platform.startswith('win'):
                 p.kill()
-                snetd_p.kill()
+                if snetd_p:
+                    snetd_p.kill()
             else:
                 p.send_signal(signum)
-                snetd_p.send_signal(signum)
+                if snetd_p:
+                    snetd_p.send_signal(signum)
         for service, p, snetd_conf, snetd_p in service_processes:
             p.wait()
-            snetd_p.wait()
+            if snetd_p:
+                snetd_p.wait()
         exit(0)
 
     signal.signal(signal.SIGTERM, handle_signal)
@@ -47,8 +50,7 @@ def main():
     while True:
         for i, (service_module, service_p, snetd_conf, snetd_p) in enumerate(service_processes):
             if service_p.poll() is not None:
-                service_processes[i] = start_face_services(root_path, [service_module],
-                                                           args.daemon_config_path)[1]
+                service_processes[i] = start_face_services(root_path, [service_module], None)[1]
             if snetd_p is not None and snetd_p.poll() is not None:
                 service_processes[i][3] = start_snetd(root_path, snetd_conf)
         time.sleep(5)
@@ -77,7 +79,7 @@ def start_face_services(cwd, service_modules, daemon_config_path):
             snetd_config = pathlib.Path(daemon_config_path) / ('snetd_' + server_name + '_config.json')
             snetd_p = start_snetd(cwd, daemon_config_path=snetd_config)
 
-        services.append((
+        services.append([
             service_module,
             subprocess.Popen([
                 "python", "-m", service_module,
@@ -86,7 +88,7 @@ def start_face_services(cwd, service_modules, daemon_config_path):
             ], cwd=cwd),
             snetd_config,
             snetd_p
-        ))
+        ])
 
     return services
 
