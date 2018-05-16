@@ -82,7 +82,7 @@ def start_face_services(cwd, service_modules, daemon_config_path):
         services.append([
             service_module,
             subprocess.Popen([
-                "python", "-m", service_module,
+                sys.executable, "-m", service_module,
                 '--grpc-port', str(grpc_port),
                 '--json-rpc-port', str(jsonrpc_port)
             ], cwd=str(cwd)),
