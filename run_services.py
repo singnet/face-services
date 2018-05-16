@@ -59,8 +59,8 @@ def main():
 def start_snetd(cwd, daemon_config_path=None):
     cmd = ["snetd"]
     if daemon_config_path is not None:
-        cmd.extend(["--config-path", daemon_config_path])
-        return subprocess.Popen(cmd, cwd=cwd)
+        cmd.extend(["--config-path", str(daemon_config_path)])
+        return subprocess.Popen(cmd, cwd=str(cwd))
     return None
 
 
@@ -77,7 +77,7 @@ def start_face_services(cwd, service_modules, daemon_config_path):
         snetd_config = None
         if daemon_config_path:
             snetd_config = pathlib.Path(daemon_config_path) / ('snetd_' + server_name + '_config.json')
-            snetd_p = start_snetd(cwd, daemon_config_path=snetd_config)
+            snetd_p = start_snetd(str(cwd), daemon_config_path=snetd_config)
 
         services.append([
             service_module,
@@ -85,7 +85,7 @@ def start_face_services(cwd, service_modules, daemon_config_path):
                 "python", "-m", service_module,
                 '--grpc-port', str(grpc_port),
                 '--json-rpc-port', str(jsonrpc_port)
-            ], cwd=cwd),
+            ], cwd=str(cwd)),
             snetd_config,
             snetd_p
         ])
