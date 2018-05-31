@@ -45,10 +45,9 @@ def main():
     if args.out_image:
         print("Rendering bounding box and saving to {}".format(args.out_image))
         import cv2
-        import dlib
-        from faceutils import render_bounding_boxes
         image = cv2.imread(args.image)
-        render_bounding_boxes(image, [dlib.rectangle(d['x'], d['y'], d['x'] + d['w'], d['y'] + d['h']) for d in response['faces']])
+        for d in response['faces']:
+            cv2.rectangle(image, (d['x'], d['y']), (d['x'] + d['w'], d['y'] + d['h']), (0, 255, 0), 2)
         cv2.imwrite(args.out_image, image)
 
 
