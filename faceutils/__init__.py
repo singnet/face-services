@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 import dlib
 import os
+import io
+from skimage import io as ioimg
 
 from tests import DEBUG_IMAGE_PATH
 
@@ -27,10 +29,14 @@ def render_bounding_boxes(frame, detected_boxes):
         cv2.rectangle(frame, (d.left(), d.top()), (d.right(), d.bottom()), (0, 255, 0), 2)
 
 
-def debug_image_file_name(test, img_fn):
+def debug_image_file_name(test, img_fn, index=None):
     base_img_fn = os.path.basename(img_fn)
     parts = test.id().rsplit(".", 2)[1:]
-    parts.append(base_img_fn)
+
+    parts.append(os.path.splitext(base_img_fn)[0])
+    if index is not None:
+        parts.append(str(index))
+    parts.append(os.path.splitext(base_img_fn)[1])
     return os.path.join(DEBUG_IMAGE_PATH, "_".join(parts))
 
 
@@ -53,3 +59,13 @@ def render_face_landmarks_debug_image(test, img_fn, result):
     for landmarks in result.landmarked_faces:
         render_landmarks(image, [landmarks.point])
     cv2.imwrite(debug_image_file_name(test, img_fn), image)
+
+
+def render_face_alignment_debug_image(test, img_fn, results):
+    if DEBUG_IMAGE_PATH is None:
+        return
+    for idx, result in enumerate(results):
+        img_data = io.BytesIO(result)
+        img = ioimg.imread(img_data)
+        ioimg.imsave(debug_image_file_name(test, img_fn, idx), img)
+

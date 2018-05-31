@@ -74,6 +74,7 @@ class TestFaceRecognitionGRPC(unittest.TestCase):
             logging.debug(
                 "Testing face recognition on file with a single face %s" % (img_fn,))
             result = recognise_face(self.stub, img_fn, bboxes)
+            #print(np.array([f for f in result.identities[0].identity]))
             self.assertEqual(len(result.identities), len(bboxes))
 
     def test_recognise_multiple_faces(self):
@@ -82,6 +83,8 @@ class TestFaceRecognitionGRPC(unittest.TestCase):
             logging.debug(
                 "Testing face recognition on file with multiple faces %s" % (img_fn,))
             result = recognise_face(self.stub, img_fn, bboxes)
+            #for i in range(0, len(bboxes)):
+            #    print(repr(np.array([f for f in result.identities[i].identity])))
             self.assertEqual(len(result.identities), len(bboxes))
 
     def test_recognise_no_faces(self):
@@ -91,6 +94,7 @@ class TestFaceRecognitionGRPC(unittest.TestCase):
             logging.debug("Testing face recognition on file with no faces %s" % (img_fn,))
             result = recognise_face(self.stub, img_fn, bboxes)
             # Should still have the right number of responses, even if they are meaningless
+            #print(np.array([f for f in result.identities[0].identity]))
             self.assertEqual(len(result.identities), len(bboxes))
 
 
