@@ -11,6 +11,7 @@ import grpc
 import services.face_alignment_server
 from services.face_alignment_client import align_face
 import services.grpc.face_alignment_pb2_grpc
+from faceutils import render_face_alignment_debug_image
 
 from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated_faces
 
@@ -80,6 +81,8 @@ class TestFaceAlignmentGRPC(unittest.TestCase):
                 "Testing face alignment on file with a single face %s" % (img_fn,))
             result = align_face(self.stub, img_fn, bboxes)
             self.assertEqual(len(result), len(bboxes))
+            render_face_alignment_debug_image(self, img_fn, result)
+
 
     def test_align_multiple_faces(self):
         for img_fn in multiple_faces:
@@ -88,6 +91,8 @@ class TestFaceAlignmentGRPC(unittest.TestCase):
                 "Testing face alignment on file with multiple faces %s" % (img_fn,))
             result = align_face(self.stub, img_fn, source_bboxes=bboxes)
             self.assertEqual(len(result), len(bboxes))
+            render_face_alignment_debug_image(self, img_fn, result)
+
 
     def test_align_no_faces(self):
         for img_fn in no_faces:
@@ -97,6 +102,7 @@ class TestFaceAlignmentGRPC(unittest.TestCase):
             result = align_face(self.stub, img_fn, source_bboxes=bboxes)
             # Should still have the right number of responses, even if they are meaningless
             self.assertEqual(len(result), len(bboxes))
+            render_face_alignment_debug_image(self, img_fn, result)
 
 
 if __name__ == '__main__':
