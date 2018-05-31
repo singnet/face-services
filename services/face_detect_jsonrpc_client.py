@@ -41,7 +41,17 @@ def main():
         params['job_signature'] = job_signature
 
     response = jsonrpcclient.request(endpoint, "find_face", **params)
-    print(response)
+
+    if args.out_image:
+        print("Rendering bounding box and saving to {}".format(args.out_image))
+        import cv2
+        import dlib
+        from faceutils import render_bounding_boxes
+        image = cv2.imread(args.image)
+        render_bounding_boxes(image, [dlib.rectangle(d['x'], d['y'], d['x'] + d['w'], d['y'] + d['h']) for d in response['faces']])
+        cv2.imwrite(args.out_image, image)
+
+
 
 def snet_setup():
     service_name = "face_detect"
