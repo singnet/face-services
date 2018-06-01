@@ -21,6 +21,8 @@ def main():
                         type=str, required=True)
     parser.add_argument("--face-bb", help='Specify face bounding box in "x,y,w,h" format',
                         type=str, required=True, action='append')
+    parser.add_argument("--out-image", help="Render a stem plot of the 128d identity vector",
+                        type=str, required=False)
     args = parser.parse_args(sys.argv[1:])
 
     with open(args.image, "rb") as f:
@@ -41,7 +43,21 @@ def main():
 
     response = jsonrpcclient.request(endpoint, "recognise_face", **params)
 
-    print(response)
+    if args.out_image:
+        import numpy as np
+        from matplotlib import pyplot as plt
+
+        for idx, identity in enumerate(response['face_identities']):
+            face_a = np.array(identity)
+            out_fn = "stem_identity_" + str(idx) + "_" + args.out_image
+            x = np.linspace(0, face_a.shape[0], face_a.shape[0], endpoint=False)
+            plt.figure(figsize=(10, 5))
+
+            extent = 0.4
+            plt.ylim(-extent, extent)
+            markerline, stemlines, baseline = plt.stem(x, face_a)
+            plt.setp(baseline, color='r', linewidth=2)
+            plt.savefig(out_fn)
 
 
 if __name__ == '__main__':
