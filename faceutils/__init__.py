@@ -1,9 +1,11 @@
 import numpy as np
 import cv2
-import dlib
 import os
 import io
+import yaml
+
 from skimage import io as ioimg
+from subprocess import Popen, PIPE
 
 from tests import DEBUG_IMAGE_PATH
 
@@ -41,6 +43,7 @@ def debug_image_file_name(test, img_fn, index=None):
 
 
 def convert_face_detections_proto_to_dlib_rect(detections):
+    import dlib
     return [dlib.rectangle(d.x, d.y, d.x + d.w, d.y + d.h) for d in detections.face_bbox]
 
 
@@ -69,3 +72,43 @@ def render_face_alignment_debug_image(test, img_fn, results):
         img = ioimg.imread(img_data)
         ioimg.imsave(debug_image_file_name(test, img_fn, idx), img)
 
+
+def _debug_snet_call(p, output, err):
+    if p.returncode != 0:
+        print("snet call failed with exit code {}".format(p.returncode))
+        print("stdout", output)
+        print("stderr", err)
+        raise Exception("snet call failed")
+
+def snet_setup(service_name, max_price=1000000):
+    print("Get {} service details from SingularityNET".format(service_name))
+
+    p = Popen("snet registry query {}".format(service_name).split(" "), stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    output, err = p.communicate()
+    _debug_snet_call(p, output, err)
+
+    agent_address = yaml.load(output)['record']['agent']
+
+    print("  - agent address is {}".format(agent_address))
+
+    endpoint_cmd_str = "snet contract Agent --at {} endpoint".format(agent_address)
+    p = Popen(endpoint_cmd_str.split(" "), stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    output, err = p.communicate()
+    _debug_snet_call(p, output, err)
+    endpoint = yaml.load(output)
+
+    print("  - agent endpoint is {}".format(endpoint))
+
+    print("Funding job on SingularityNET")
+    job_cmd_str = "snet agent --at {} create-jobs --number 1 --max-price {} --funded --signed --no-confirm".format(agent_address, max_price)
+    p = Popen(job_cmd_str.split(" "), stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    output, err = p.communicate()
+    _debug_snet_call(p, output, err)
+    jobs = yaml.load(output)['jobs']
+    job = jobs[0]
+    job_address = job['job_address']
+    job_signature = job['job_signature']
+
+    print("  - job funded and at address {}".format(job_address))
+
+    return endpoint, job_address, job_signature
