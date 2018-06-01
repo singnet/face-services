@@ -17,34 +17,31 @@ def main():
                         type=str, required=False)
     parser.add_argument("--snet", help="call service on SingularityNet - requires configured snet CLI",
                         action='store_true')
-    parser.add_argument("--image", help="path to image to apply face detection on",
+    parser.add_argument("--image", help="path to image to apply face recognition on",
                         type=str, required=True)
-    parser.add_argument("--algorithm", help="face detection algorithm to request",
-                        type=str, default="dlib_cnn", action='store',
-                        choices=['dlib_cnn','dlib_hog','haar_cascade'])
-    parser.add_argument("--out-image", help="Render bounding box on image and save",
-                        type=str, required=False)
+    parser.add_argument("--face-bb", help='Specify face bounding box in "x,y,w,h" format',
+                        type=str, required=True, action='append')
     args = parser.parse_args(sys.argv[1:])
 
     with open(args.image, "rb") as f:
         img_base64 = base64.b64encode(f.read()).decode('ascii')
 
     endpoint = args.endpoint
-    params = {'algorithm': args.algorithm, "image": img_base64}
+    bboxes = []
+    for b in args.face_bb:
+        b = [int(x) for x in b.split(',')]
+        assert len(b) == 4
+        bboxes.append(dict(x=b[0], y=b[1], w=b[2], h=b[3]))
+
+    params = {"image": img_base64, "faces": bboxes}
     if args.snet:
-        endpoint, job_address, job_signature = snet_setup(service_name="face_detect")
+        endpoint, job_address, job_signature = snet_setup(service_name="face_recognition")
         params['job_address'] = job_address
         params['job_signature'] = job_signature
 
-    response = jsonrpcclient.request(endpoint, "find_face", **params)
+    response = jsonrpcclient.request(endpoint, "recognise_face", **params)
 
-    if args.out_image:
-        print("Rendering bounding box and saving to {}".format(args.out_image))
-        import cv2
-        image = cv2.imread(args.image)
-        for d in response['faces']:
-            cv2.rectangle(image, (d['x'], d['y']), (d['x'] + d['w'], d['y'] + d['h']), (0, 255, 0), 2)
-        cv2.imwrite(args.out_image, image)
+    print(response)
 
 
 if __name__ == '__main__':
