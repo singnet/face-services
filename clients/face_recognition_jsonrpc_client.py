@@ -5,7 +5,7 @@ import argparse
 import base64
 
 from services import registry
-from faceutils import snet_setup
+from .snet import snet_setup
 
 
 def main():
@@ -17,12 +17,12 @@ def main():
                         type=str, required=False)
     parser.add_argument("--snet", help="call service on SingularityNet - requires configured snet CLI",
                         action='store_true')
-    parser.add_argument("--image", help="path to image to apply face alignment on",
+    parser.add_argument("--image", help="path to image to apply face recognition on",
                         type=str, required=True)
-    parser.add_argument("--out-image", help="Decode and save aligned imagery.",
-                        type=str, required=False)
     parser.add_argument("--face-bb", help='Specify face bounding box in "x,y,w,h" format',
                         type=str, required=True, action='append')
+    parser.add_argument("--out-image", help="Render a stem plot of the 128d identity vector",
+                        type=str, required=False)
     args = parser.parse_args(sys.argv[1:])
 
     with open(args.image, "rb") as f:
@@ -35,25 +35,29 @@ def main():
         assert len(b) == 4
         bboxes.append(dict(x=b[0], y=b[1], w=b[2], h=b[3]))
 
-    params = {"image": img_base64, "source_bboxes": bboxes}
+    params = {"image": img_base64, "faces": bboxes}
     if args.snet:
-        endpoint, job_address, job_signature = snet_setup(service_name="face_alignment")
+        endpoint, job_address, job_signature = snet_setup(service_name="face_recognition")
         params['job_address'] = job_address
         params['job_signature'] = job_signature
 
-    response = jsonrpcclient.request(endpoint, "align_face", **params)
+    response = jsonrpcclient.request(endpoint, "recognise_face", **params)
 
     if args.out_image:
-        import io
-        import skimage.io as ioimg
+        import numpy as np
+        from matplotlib import pyplot as plt
 
-        print("Saving aligned faces with suffix ...{}".format(args.out_image))
+        for idx, identity in enumerate(response['face_identities']):
+            face_a = np.array(identity)
+            out_fn = "stem_identity_" + str(idx) + "_" + args.out_image
+            x = np.linspace(0, face_a.shape[0], face_a.shape[0], endpoint=False)
+            plt.figure(figsize=(10, 5))
 
-        for idx, result in enumerate(response['aligned_faces']):
-            data = base64.b64decode(result)
-            img_data = io.BytesIO(data)
-            img = ioimg.imread(img_data)
-            ioimg.imsave("aligned_face_" + str(idx) + "_" + args.out_image, img)
+            extent = 0.4
+            plt.ylim(-extent, extent)
+            markerline, stemlines, baseline = plt.stem(x, face_a)
+            plt.setp(baseline, color='r', linewidth=2)
+            plt.savefig(out_fn)
 
 
 if __name__ == '__main__':

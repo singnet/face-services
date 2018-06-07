@@ -1,0 +1,5 @@
+jsonrpcclient
+requests
+pyyaml
+snet-cli
+opencv-contrib-python

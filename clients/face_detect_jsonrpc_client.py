@@ -4,8 +4,8 @@ import os
 import argparse
 import base64
 
+from .snet import snet_setup
 from services import registry
-from faceutils import snet_setup
 
 
 def main():

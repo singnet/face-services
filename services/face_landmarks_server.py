@@ -14,6 +14,7 @@ from jsonrpcserver.exceptions import InvalidParams
 from skimage import io as ioimg
 import dlib
 
+import services.common
 import services.grpc.face_landmarks_pb2_grpc
 from services.grpc.face_common_pb2 import BoundingBox, Point2D, FaceLandmarks, FaceLandmarkDescriptions
 from services.grpc.face_landmarks_pb2 import FaceLandmarkResponse
@@ -180,7 +181,7 @@ async def handle(request):
 
 
 if __name__ == '__main__':
-    parser = services.common_parser(__file__)
+    parser = services.common.common_parser(__file__)
     args = parser.parse_args(sys.argv[1:])
     serve_args = {}
-    services.main_loop(serve, serve_args, handle, args)
+    services.common.main_loop(serve, serve_args, handle, args)
