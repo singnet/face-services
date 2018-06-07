@@ -33,8 +33,8 @@ python fetch_models.py
 build_proto.bat
 ```
 
-This repo has been developed on Windows, there should be nothing preventing it working on Linux/OSX except some
-erroneous back-slashes in paths. If you run into any issues please report and I'll fix.
+This repo has been developed on Windows, but is deployed on linux and I've run it on my Macbook.
+If you run into any cross-platform issues (or any other type of issue!) please report and I'll fix.
 
 ## Webcam test
 
@@ -52,95 +52,90 @@ There are several hot-keys you can use:
 - `d` - change face detection model.
 - `q` - quit.
 
-## Face Service Details
+## Run Face Services
 
-The aim is that any component can be swapped out with another, and be able to gracefully handle different inputs.
-This section aims to describe those interfaces, and responsibilities. It will become more specific as they are 
-implementated.
+To run the services:
+
+```
+python run_services.py
+```
+
+To run the services, each one fronted by an instance of the SingularityNET daemon (`snetd`), make sure
+you have created your own agent contracts and then use them to generate a directory of config files. One for each
+service. It will ask you for the private key for the identity that created the agent contracts:
+
+```
+python create_snet_config.py --network kovan --detect-address 0x1234 --landmarks-address 0x2345 --alignment-address 0x3456 --recognition-address 0x4567
+python run_services.py --daemon-config-path config/
+```
+
+There are also Dockerfiles for gpu or cpu deployments. Runtime selection isn't possible because dlib choses
+the execution method at compilation time. 
+
+## Calling Services on SingularityNet
+
+The clients directory has command line tools for calling each via SingularityNET. Use Kovan, and make sure you
+have snet-cli configured to use an identity with KETH and AGI tokens.
+
+```
+pip install -r clients/requirements.txt # only needed if you haven't installed the root requirements.txt
+python -m clients.face_detect_jsonrpc_client --image tests/test_images/laos.jpg --snet \
+    --out-image ~/laos_face_detect.jpg
+```
+
+In the terminal output it should tell you the bounding boxes, which you can then use for the other services, e.g.: 
+```
+python -m clients.face_landmarks_jsonrpc_client --image tests/test_images/laos.jpg --snet \
+    --out-image ~/laos_face_landmarks.jpg
+    --face-bb 511,170,283,312 --face-bb 61,252,236,259
+```
+
+## Service description
+
+Each service defines both a grpc and jsonrpc server. grpc is better formalised and client code is generated,
+but SingularityNet currently only supports jsonrpc. I've tried to keep the method names the same, except
+that grpc uses CamelCase (e.g. FindFace) whereas jsonrpc method names use underscores (e.g. find_face). 
 
 ### Face localization
 
-Implementations: [opencv haar cascade](https://docs.opencv.org/3.4.1/d7/d8b/tutorial_py_face_detection.html),
-[dlib HOG and SVM](https://github.com/davisking/dlib/blob/master/python_examples/face_detector.py),
-[dlib CNN](https://github.com/davisking/dlib/blob/master/python_examples/cnn_face_detector.py)
+Implementations:
+- ✓ [opencv haar cascade](https://docs.opencv.org/3.4.1/d7/d8b/tutorial_py_face_detection.html),
+- ✓ [dlib HOG and SVM](https://github.com/davisking/dlib/blob/master/python_examples/face_detector.py),
+- ✓ [dlib CNN](https://github.com/davisking/dlib/blob/master/python_examples/cnn_face_detector.py)
 
 Calls:
-- `get_bounding_boxes` -> expects rgb image, return a number of bounding boxes where faces are detected,
-optionally return rgb image with bounding box annotations.
+- `FindFace` -> expects rgb image, return a number of bounding boxes where faces are detected.
 
 ### Face landmark detection
 
-Implementations: [dlib 68 point CNN](https://github.com/davisking/dlib/blob/master/python_examples/face_landmark_detection.py),
-[dlib 5 point CNN](http://blog.dlib.net/2017/09/fast-multiclass-object-detection-in.html),
-possibly [clmtrack](https://github.com/auduno/clmtrackr) to show a js service working in conjunction with python/c++?
+Implementations:
+- ✓ [dlib 68 point CNN](https://github.com/davisking/dlib/blob/master/python_examples/face_landmark_detection.py)
+- ✓ [dlib 5 point CNN](http://blog.dlib.net/2017/09/fast-multiclass-object-detection-in.html)
+- possibly [clmtrack](https://github.com/auduno/clmtrackr) to show a js service working in conjunction with python/c++?
 
 Calls:
-- `get_landmark_models` -> no arguments, return list of landmark models, including description of each landmark,
+- `GetLandmarkModels` -> no arguments, return list of landmark models, including description of each landmark,
   e.g. "tip of nose", optionally also return rgb image showing the layout 
-- `get_landmarks` -> expects rgb image. Find faces, then return x,y locations for each landmark.
-- `get_landmarks_for_faces` -> expects rgb image, a list of face detection bboxes.
+- `GetLandmarks` -> expects rgb image, a list of face detection bboxes.
   For each face bbox, return x,y locations for each landmark
 
 ### Face alignment
 
-Implementations: dlib `save_face_chips`, opencv `getAffineTransform` or `getPerspectiveTransform`.
+Implementations:
+- ✓ dlib `save_face_chips`
+- opencv `getAffineTransform` or `getPerspectiveTransform`.
 
 Calls:
-- `align_face` -> expects rgb image, landmarks in image, destination locations for landmarks, optionally
-  specify type of transform and how to handle borders (mirror, zero, etc). Return aligned rgb image (with error?)
+- `AlignFace` -> expects rgb image and detected face bounding boxes. Return aligned rgb image.
 
 ### Face recognition
 
-Implementations: [dlib CNN](https://github.com/davisking/dlib/blob/master/python_examples/face_recognition.py) 
+Implementations:
+- ✓ [dlib CNN](https://github.com/davisking/dlib/blob/master/python_examples/face_recognition.py) 
 
 Calls:
-- `get_landmark_models` -> no arguments, return list of landmark models recognition algorithm uses for alignment, including
-mean locations, so callers can pre-align the face if they want.
-- `recognise_face` -> expects rgb image, and list of face detections using one of the landmark models.
-  Return 128D vector of floats representing identity
-- `recognise_face_prealigned` -> expects a pre-aligned image of a face, 150x150px.
+- `RecogniseFace` -> expects rgb image, and list of face detections bounding boxes
   Return 128D vector of floats representing identity
 
 The 128D vector of floats has no shared meaning to other services, i.e. one can't compare it from one
-recognition service to another. Not sure if the API should describe this or
-
-## Support Service Details
-
-A couple of generally useful services which may be worth splitting off into their own repo eventually.
-
-### Mapping frames in video to an image service
-
-Video processing can smooth the noise out of frame-by-frame
-predictions or use interpolation to avoid processing every frame (if the upstream service is too slow/expensive).
-
-A video service could provide a bridge from image-based services to video.
-
-For localizations, shapes, or segmentation, there are different ways this could be approached:
-- Take a video and send key frames to a image-based service, interpolate between them using the motion vectors
-  inherent in the video stream.
-- Take a video and send every Nth frame to image-based service. Use optical-flow and template-based matching
-  to interpolate between frames.
-
-For something like face recognition, we'd want to assign a label to each face descriptor tracked through time.
-Since the face descriptor will have noise between frames, we will want to cluster identities and assign a
-unique (within the video) label to each. Basic graph clustering (dlib provides easy hooks to the chinese whispers algorithm)
-of identity vectors is one approach, but weighting their edges by the spatial/temporal distance of face descriptors
-should improve it.
-
-### Image converter
-
-We could reimplement image conversion and manipulation in every service, but until
-it is bundled as part of a library, this will be annoying extra work for service authors.
-
-Thus, an image converter service could be helpful:
-
-- load a wide variety of image formats, including those that are less known outside of
-  computer-vision/rendering - e.g. exr.
-- load these from different storage systems, S3, ipfs, bytestream, URL
-- normalise images
-- channel swapping, merging, or dropping
-
-## Launch Services
-
-**TODO** Once individual steps work within the live webcam demo, they'll be wrapped up with grpc service definitions and
-an automatic launcher launcher.
+recognition service to another.
