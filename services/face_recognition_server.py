@@ -15,6 +15,7 @@ import cv2
 import dlib
 from skimage import io as ioimg
 
+import services.common
 import services.grpc.face_recognition_pb2_grpc
 from services.grpc.face_common_pb2 import BoundingBox, Point2D
 from services.grpc.face_recognition_pb2 import FaceRecognitionHeader, FaceIdentity, FaceRecognitionResponse, FaceRecognitionRequest
@@ -125,7 +126,7 @@ async def handle(request):
 
 
 if __name__ == '__main__':
-    parser = services.common_parser(__file__)
+    parser = services.common.common_parser(__file__)
     args = parser.parse_args(sys.argv[1:])
     serve_args = {}
-    services.main_loop(serve, serve_args, handle, args)
+    services.common.main_loop(serve, serve_args, handle, args)

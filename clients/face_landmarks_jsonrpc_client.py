@@ -5,7 +5,7 @@ import argparse
 import base64
 
 from services import registry
-from faceutils import snet_setup
+from .snet import snet_setup
 
 
 def main():
@@ -17,12 +17,15 @@ def main():
                         type=str, required=False)
     parser.add_argument("--snet", help="call service on SingularityNet - requires configured snet CLI",
                         action='store_true')
-    parser.add_argument("--image", help="path to image to apply face recognition on",
+    parser.add_argument("--image", help="path to image to apply face landmark prediction on",
                         type=str, required=True)
+    parser.add_argument("--model", help="face landmark algorithm to request",
+                        type=str, action='store',
+                        choices=['5', '68'])
+    parser.add_argument("--out-image", help="Render landmarks on image and save",
+                        type=str, required=False)
     parser.add_argument("--face-bb", help='Specify face bounding box in "x,y,w,h" format',
                         type=str, required=True, action='append')
-    parser.add_argument("--out-image", help="Render a stem plot of the 128d identity vector",
-                        type=str, required=False)
     args = parser.parse_args(sys.argv[1:])
 
     with open(args.image, "rb") as f:
@@ -35,29 +38,33 @@ def main():
         assert len(b) == 4
         bboxes.append(dict(x=b[0], y=b[1], w=b[2], h=b[3]))
 
-    params = {"image": img_base64, "faces": bboxes}
+    params = {'model': args.model, "image": img_base64, "face_bboxes": bboxes}
     if args.snet:
-        endpoint, job_address, job_signature = snet_setup(service_name="face_recognition")
+        endpoint, job_address, job_signature = snet_setup(service_name="face_landmarks")
         params['job_address'] = job_address
         params['job_signature'] = job_signature
 
-    response = jsonrpcclient.request(endpoint, "recognise_face", **params)
+    response = jsonrpcclient.request(endpoint, "get_landmarks", **params)
 
     if args.out_image:
+        import cv2
         import numpy as np
-        from matplotlib import pyplot as plt
+        print("Rendering landmarks and saving to {}".format(args.out_image))
+        image = cv2.imread(args.image)
+        for l in response['landmarks']:
+            landmarks = np.matrix([[p['x'], p['y']] for p in l['points']])
+            for idx, point in enumerate(landmarks):
+                pos = (point[0, 0], point[0, 1])
 
-        for idx, identity in enumerate(response['face_identities']):
-            face_a = np.array(identity)
-            out_fn = "stem_identity_" + str(idx) + "_" + args.out_image
-            x = np.linspace(0, face_a.shape[0], face_a.shape[0], endpoint=False)
-            plt.figure(figsize=(10, 5))
+                # annotate the positions
+                cv2.putText(image, str(idx), pos,
+                            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                            fontScale=0.4,
+                            color=(0, 0, 255))
 
-            extent = 0.4
-            plt.ylim(-extent, extent)
-            markerline, stemlines, baseline = plt.stem(x, face_a)
-            plt.setp(baseline, color='r', linewidth=2)
-            plt.savefig(out_fn)
+                # draw points on the landmark positions
+                cv2.circle(image, pos, 3, color=(0, 255, 255))
+        cv2.imwrite(args.out_image, image)
 
 
 if __name__ == '__main__':
