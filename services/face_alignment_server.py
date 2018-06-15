@@ -143,6 +143,11 @@ async def align_face(**kwargs):
     img_data = io.BytesIO(binary_image)
     img = ioimg.imread(img_data)
 
+    # Drop alpha channel if it exists
+    if img.shape[-1] == 4:
+        img = img[:, :, :3]
+        log.debug("Dropping alpha channel from image")
+
     face_images = []
     for bbox in source_bboxes:
         b = BoundingBox(**bbox)
