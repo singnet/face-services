@@ -38,7 +38,7 @@ def main():
         assert len(b) == 4
         bboxes.append(dict(x=b[0], y=b[1], w=b[2], h=b[3]))
 
-    params = {'model': args.model, "image": img_base64, "face_bboxes": bboxes}
+    params = {'landmark_model': args.model, "image": img_base64, "face_bboxes": bboxes}
     if args.snet:
         endpoint, job_address, job_signature = snet_setup(service_name="face_landmarks")
         params['job_address'] = job_address
