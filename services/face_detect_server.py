@@ -136,6 +136,11 @@ async def find_face(**kwargs):
     img_data = io.BytesIO(binary_image)
     img = ioimg.imread(img_data)
 
+    # Drop alpha channel if it exists
+    if img.shape[-1] == 4:
+        img = img[:, :, :3]
+        log.debug("Dropping alpha channel from image")
+
     dets = face_detect(img, face_detector, algorithm)
 
     faces = []
