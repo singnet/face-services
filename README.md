@@ -79,15 +79,12 @@ have snet-cli configured to use an identity with KETH and AGI tokens.
 
 ```
 pip install -r clients/requirements.txt # only needed if you haven't installed the root requirements.txt
-python -m clients.face_detect_jsonrpc_client --image tests/test_images/laos.jpg --snet \
-    --out-image ~/laos_face_detect.jpg
+python -m clients.face_detect_jsonrpc_client --image tests/test_images/laos.jpg --snet --out-image ~/laos_face_detect.jpg
 ```
 
 In the terminal output it should tell you the bounding boxes, which you can then use for the other services, e.g.: 
 ```
-python -m clients.face_landmarks_jsonrpc_client --image tests/test_images/laos.jpg --snet \
-    --out-image ~/laos_face_landmarks.jpg
-    --face-bb 511,170,283,312 --face-bb 61,252,236,259
+python -m clients.face_landmarks_jsonrpc_client --image tests/test_images/laos.jpg --snet --out-image ~/laos_face_landmarks.jpg --face-bb 511,170,283,312 --face-bb 61,252,236,259
 ```
 
 ## Service description
