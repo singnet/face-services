@@ -159,7 +159,7 @@ async def align_face(**kwargs):
 
 async def handle(request):
     request = await request.text()
-    response = await methods.dispatch(request)
+    response = await methods.dispatch(request, trim_log_values=True)
     if response.is_notification:
         return web.Response()
     else:
