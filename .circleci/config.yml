@@ -25,7 +25,7 @@ defaults: &default_steps
     - run:
         name: Fetch models
         command: |
-          python3 ../fetch_models.py /caches/models
+          python3 fetch_models.py /caches/models
           ls -la models
     - run:
         name: Build application Docker image
