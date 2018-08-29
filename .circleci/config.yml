@@ -1,0 +1,71 @@
+defaults: &default_steps
+  steps:
+    - checkout
+    - setup_remote_docker
+    - run:
+        name: Install dependencies
+        command: |
+          apk add --no-cache python3 && \
+            python3 -m ensurepip && \
+            rm -r /usr/lib/python*/ensurepip && \
+            pip3 install --upgrade pip setuptools
+          pip3 install \
+            requests \
+            tqdm
+    - restore_cache:
+        keys:
+          - v2-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+    - run:
+        name: Load Docker image layer cache
+        command: |
+          set +o pipefail
+          mkdir -p /caches
+          ls -la /caches
+          docker load -i /caches/docker_image.tar | true
+    - run:
+        name: Fetch models
+        command: |
+          python3 ../fetch_models.py /caches/models
+          ls -la models
+    - run:
+        name: Build application Docker image
+        command: |
+          docker build --cache-from=$SERVICE_NAME -t $SERVICE_NAME -f Dockerfile.gpu .
+    - run:
+        name: Save Docker image layer cache
+        command: |
+          mkdir -p /caches
+          docker save -o /caches/docker_image.tar $SERVICE_NAME
+          ls -la /caches/
+    - save_cache:
+        key: v2-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}-{{ epoch }}
+        paths:
+          - /caches/docker_image.tar
+          - /caches/models
+    - deploy:
+        name: Push Docker image
+        command: |
+          if [ "$CIRCLE_BRANCH" == "master" ]; then
+            docker login -u $DOCKER_HUB_USER_ID -p $DOCKER_HUB_PWD
+            docker tag $SERVICE_NAME $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1
+            docker tag $SERVICE_NAME $DOCKER_ORG/$SERVICE_NAME:latest
+            docker push $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1
+            docker push $DOCKER_ORG/$SERVICE_NAME:latest
+          fi
+version: 2
+jobs:
+  build_face_services:
+    working_directory: /face-services
+    docker:
+      - image: docker:17.05.0-ce-git
+    environment:
+      SERVICE_NAME: face-services
+      ORG: singnet
+      DOCKER_ORG: singularitynet
+    <<: *default_steps
+workflows:
+  version: 2
+  build_containers:
+    jobs:
+      - build_face_services
+  
