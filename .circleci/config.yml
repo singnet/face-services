@@ -57,7 +57,7 @@ jobs:
   build_face_services:
     working_directory: /face-services
     docker:
-      - image: docker:18.09-rc-git
+      - image: docker:18.06.1-ce-git
     environment:
       SERVICE_NAME: face-services
       ORG: singnet
