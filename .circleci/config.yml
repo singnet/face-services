@@ -68,4 +68,7 @@ workflows:
   build_containers:
     jobs:
       - build_face_services
+    filters:
+      branches:
+        only: master
   
