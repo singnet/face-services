@@ -54,7 +54,7 @@ defaults: &default_steps
           fi
 version: 2
 jobs:
-  build_face_services:
+  build-container:
     working_directory: /face-services
     docker:
       - image: docker:18.06.1-ce-git
@@ -63,11 +63,33 @@ jobs:
       ORG: singnet
       DOCKER_ORG: singularitynet
     <<: *default_steps
+  deploy:
+    machine:
+      enabled: true
+    environment:
+      SERVICE_NAME: face-services
+      ORG: singnet
+      DOCKER_ORG: singularitynet
+      SNETD_PORT: 6201-6204
+      SNETD_CONFIG: config
+    steps:
+      - run:
+          name: Deploy Over SSH
+          command: |
+            ssh $SSH_USER@$SSH_HOST << EOF
+              docker login -u $DOCKER_HUB_USER_ID -p $DOCKER_HUB_PWD;
+              docker pull $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1
+              docker stop $SERVICE_NAME && docker rm $SERVICE_NAME
+              docker run --runtime=nvidia --name $SERVICE_NAME --restart unless-stopped -p $SNETD_PORT:$SNETD_PORT -v /home/ubuntu/$SERVICE_NAME/config:/$SERVICE_NAME/config -di $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1 python3.6 run_service.py --daemon-config-path $SNETD_CONFIG
+            EOF
 workflows:
   version: 2
-  build_containers:
+  build-and-maybe-deploy:
     jobs:
-      - build_face_services:
+      - build-container
+      - deploy:
+          requires:
+            - build-container
           filters:
             branches:
               only: master
