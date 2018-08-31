@@ -1,3 +1,4 @@
 config/
 *.ipynb
 snet_abis.json
+.circleci/

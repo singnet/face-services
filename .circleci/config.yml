@@ -80,7 +80,7 @@ jobs:
               docker login -u $DOCKER_HUB_USER_ID -p $DOCKER_HUB_PWD;
               docker pull $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1
               docker stop $SERVICE_NAME && docker rm $SERVICE_NAME
-              docker run --runtime=nvidia --name $SERVICE_NAME --restart unless-stopped -p $SNETD_PORT:$SNETD_PORT -v /home/ubuntu/$SERVICE_NAME/config:/$SERVICE_NAME/config -di $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1 python3.6 run_service.py --daemon-config-path $SNETD_CONFIG
+              docker run --runtime=nvidia --name $SERVICE_NAME --restart unless-stopped -p $SNETD_PORT:$SNETD_PORT -v /home/ubuntu/$SERVICE_NAME/config:/$SERVICE_NAME/config -di $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1 python3.6 run_services.py --daemon-config-path $SNETD_CONFIG
             EOF
 workflows:
   version: 2
