@@ -69,14 +69,16 @@ def start_face_services(cwd, service_modules, daemon_config_path):
 
     for i, service_module in enumerate(service_modules):
         server_name = service_module.split('.')[-1]
-        grpc_port = registry[server_name]["grpc"]
-        jsonrpc_port = registry[server_name]["jsonrpc"]
 
+        grpc_port = registry[server_name]["grpc"]
+        
         print("Launching", service_module, "on ports", str(registry[server_name]))
         snetd_p = None
         snetd_config = None
         if daemon_config_path:
-            snetd_config = pathlib.Path(daemon_config_path) / ('snetd_' + server_name + '_config.json')
+            sub = "_server"
+            server_name_chop = server_name[:-len(sub)] if server_name.endswith(sub) else server_name
+            snetd_config = pathlib.Path(daemon_config_path) / ('snetd_' + server_name_chop + '_config.json')
             snetd_p = start_snetd(str(cwd), daemon_config_path=snetd_config)
 
         services.append([
@@ -84,7 +86,6 @@ def start_face_services(cwd, service_modules, daemon_config_path):
             subprocess.Popen([
                 sys.executable, "-m", service_module,
                 '--grpc-port', str(grpc_port),
-                '--json-rpc-port', str(jsonrpc_port)
             ], cwd=str(cwd)),
             snetd_config,
             snetd_p
