@@ -7,10 +7,6 @@ import logging
 import grpc
 import concurrent.futures as futures
 
-from aiohttp import web
-from jsonrpcserver.aio import methods
-from jsonrpcserver.exceptions import InvalidParams
-
 from skimage import io as ioimg
 import dlib
 
@@ -120,73 +116,8 @@ def serve(max_workers=10, port=50051):
     return server
 
 
-@methods.add
-async def ping():
-    return 'pong'
-
-
-@methods.add
-async def get_landmark_models(**kwargs):
-    lm = kwargs.get("landmark_model", None)
-    if lm is None:
-        models = ["5", "68"]
-    else:
-        models = [lm]
-
-    response = {}
-    for m in models:
-        if m == "5":
-            response[m] = landmark5_descriptions
-        elif m == "68":
-            response[m] = landmark68_descriptions
-        else:
-            raise InvalidParams("Unknown landmark model")
-
-    return {'landmark_models': response}
-
-
-@methods.add
-async def get_landmarks(**kwargs):
-    image = kwargs.get("image", None)
-    lm = kwargs.get("landmark_model", "5")
-    bboxes = kwargs.get("face_bboxes", [])
-
-    if image is None:
-        raise InvalidParams("image is required")
-
-    binary_image = base64.b64decode(image)
-    img_data = io.BytesIO(binary_image)
-    img = ioimg.imread(img_data)
-
-    # Drop alpha channel if it exists
-    if img.shape[-1] == 4:
-        img = img[:, :, :3]
-        log.debug("Dropping alpha channel from image")
-
-    face_landmarks = []
-
-    for bbox in bboxes:
-        bbox_pb = BoundingBox(**bbox)
-        points = landmark_finder(img, bbox_pb, lm)
-        face_landmarks.append({
-            'landmark_model': lm,
-            'points': [{'x': p.x, 'y': p.y} for p in points]
-        })
-
-    return {'landmarks': face_landmarks}
-
-
-async def handle(request):
-    request = await request.text()
-    response = await methods.dispatch(request, trim_log_values=True)
-    if response.is_notification:
-        return web.Response()
-    else:
-        return web.json_response(response, status=response.http_status)
-
-
 if __name__ == '__main__':
     parser = services.common.common_parser(__file__)
     args = parser.parse_args(sys.argv[1:])
     serve_args = {}
-    services.common.main_loop(serve, serve_args, handle, args)
+    services.common.main_loop(serve, serve_args, args)

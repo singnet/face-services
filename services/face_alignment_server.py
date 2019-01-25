@@ -8,10 +8,6 @@ import tempfile
 import concurrent.futures as futures
 import grpc
 
-from aiohttp import web
-from jsonrpcserver.aio import methods
-from jsonrpcserver.exceptions import InvalidParams
-
 import cv2
 import dlib
 from skimage import io as ioimg
@@ -126,48 +122,8 @@ def serve(max_workers=10, port=50051):
     return server
 
 
-@methods.add
-async def ping():
-    return 'pong'
-
-
-@methods.add
-async def align_face(**kwargs):
-    image = kwargs.get("image", None)
-    source_bboxes = kwargs.get("source_bboxes", [])
-
-    if image is None:
-        raise InvalidParams("image is required")
-
-    binary_image = base64.b64decode(image)
-    img_data = io.BytesIO(binary_image)
-    img = ioimg.imread(img_data)
-
-    # Drop alpha channel if it exists
-    if img.shape[-1] == 4:
-        img = img[:, :, :3]
-        log.debug("Dropping alpha channel from image")
-
-    face_images = []
-    for bbox in source_bboxes:
-        b = BoundingBox(**bbox)
-        raw_dst_img = do_alignment(img, b)
-        face_images.append(base64.b64encode(raw_dst_img).decode('ascii'))
-
-    return {'aligned_faces': face_images}
-
-
-async def handle(request):
-    request = await request.text()
-    response = await methods.dispatch(request, trim_log_values=True)
-    if response.is_notification:
-        return web.Response()
-    else:
-        return web.json_response(response, status=response.http_status)
-
-
 if __name__ == '__main__':
     parser = services.common.common_parser(__file__)
     args = parser.parse_args(sys.argv[1:])
     serve_args = {}
-    services.common.main_loop(serve, serve_args, handle, args)
+    services.common.main_loop(serve, serve_args, args)

@@ -20,7 +20,7 @@
     "endpoints": [
         {
             "group_name": "default_group",
-            "endpoint": "http://34.216.72.29:6001"
+            "endpoint": "http://34.216.72.29:6201"
         }
     ]
 }

@@ -3,3 +3,4 @@ models/
 *.pyc
 tests/debug_images
 downloads/*
+.vscode/
