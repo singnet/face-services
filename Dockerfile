@@ -8,8 +8,12 @@ RUN mkdir -p /tmp/snetd && cd /tmp/snetd && \
       mv snetd-0.1.4/snetd-linux-amd64 /usr/bin/snetd && \
       cd / && rm -r /tmp/snetd
 
+
+ADD requirements.txt /requirements.txt
+RUN pip3.6 install -r requirements.txt
+
 ADD . /face-services
 WORKDIR /face-services
-RUN pip install -r requirements.txt
+RUN ./buildproto.sh
 
 CMD ["python", "run_services.py"]

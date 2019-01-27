@@ -20,5 +20,6 @@ RUN pip3.6 install -r requirements.txt
 
 ADD . /face-services
 WORKDIR /face-services
+RUN ./buildproto.sh
 
 CMD ["python3.6", "run_services.py"]
