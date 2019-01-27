@@ -42,7 +42,7 @@ def main():
 
     service_modules = [
         'services.face_detect_server', 'services.face_landmarks_server',
-        'services.face_alignment_server', 'services.face_recognition_server'
+        'services.face_align_server', 'services.face_identity_server'
     ]
 
     service_processes = start_face_services(root_path, service_modules, args.daemon_config_path)
