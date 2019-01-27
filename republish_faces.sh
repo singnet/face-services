@@ -11,12 +11,12 @@ regenerate_service() {
 
     cat << EOF > $SNETD_CONFIG
 {
-"DAEMON_END_POINT": "http://$HOST:$PORT",
+"DAEMON_END_POINT": "http://$HOST:$SNETD_PORT",
 "ETHEREUM_JSON_RPC_ENDPOINT": "https://kovan.infura.io",
 "IPFS_END_POINT": "http://ipfs.singularitynet.io:80",
 "REGISTRY_ADDRESS_KEY": "0xe331bf20044a5b24c1a744abc90c1fd711d2c08d",
 "PASSTHROUGH_ENABLED": true,
-"PASSTHROUGH_ENDPOINT": "http://localhost:$PORT",
+"PASSTHROUGH_ENDPOINT": "http://localhost:$SERVICE_PORT",
 "ORGANIZATION_ID": "$ORG",
 "SERVICE_ID": "$SERVICE_NAME",
 
@@ -61,19 +61,19 @@ ORG=snet
 MD_FILE=service_metadata_face_detect.json
 SNETD_CONFIG=snetd_face_detect_config.json
 SERVICE_NAME=face-detect
-PORT=6201
+SNETD_PORT=6201
+SERVICE_PORT=6001
 PRICE=0.000001
 ETCD_ID=1
 ETCD_CLIENT_PORT=2379
 ETCD_PEER_PORT=2380
-#regenerate_service
-
-
+regenerate_service
 
 MD_FILE=service_metadata_face_landmarks.json
 SNETD_CONFIG=snetd_face_landmarks_config.json
 SERVICE_NAME=face-landmarks
-PORT=6202
+SNETD_PORT=6202
+SERVICE_PORT=6002
 PRICE=0.000001
 ETCD_ID=2
 ETCD_CLIENT_PORT=2381
@@ -83,7 +83,8 @@ regenerate_service
 MD_FILE=service_metadata_face_align.json
 SNETD_CONFIG=snetd_face_align_config.json
 SERVICE_NAME=face-align
-PORT=6203
+SNETD_PORT=6203
+SERVICE_PORT=6003
 PRICE=0.000001
 ETCD_ID=3
 ETCD_CLIENT_PORT=2383
@@ -93,7 +94,8 @@ regenerate_service
 MD_FILE=service_metadata_face_identity.json
 SNETD_CONFIG=snetd_face_identity_config.json
 SERVICE_NAME=face-identity
-PORT=6204
+SNETD_PORT=6204
+SERVICE_PORT=6004
 PRICE=0.000001
 ETCD_ID=4
 ETCD_CLIENT_PORT=2385

@@ -1,10 +1,10 @@
 {
-"DAEMON_END_POINT": "http://34.216.72.29:6001",
+"DAEMON_END_POINT": "http://34.216.72.29:6202",
 "ETHEREUM_JSON_RPC_ENDPOINT": "https://kovan.infura.io",
 "IPFS_END_POINT": "http://ipfs.singularitynet.io:80",
 "REGISTRY_ADDRESS_KEY": "0xe331bf20044a5b24c1a744abc90c1fd711d2c08d",
 "PASSTHROUGH_ENABLED": true,
-"PASSTHROUGH_ENDPOINT": "http://localhost:6001",
+"PASSTHROUGH_ENDPOINT": "http://localhost:6002",
 "ORGANIZATION_ID": "snet",
 "SERVICE_ID": "face-landmarks",
 
@@ -31,7 +31,7 @@
                         "file_pattern": "./snetd-face-landmarks.%Y%m%d.log",
                         "rotation_count": 0,
                         "rotation_time_in_sec": 86400,
-                        "type": "file"
+                        "type": "stdout"
         }
     }
 } 
