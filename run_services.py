@@ -50,7 +50,7 @@ def main():
     while True:
         for i, (service_module, service_p, snetd_conf, snetd_p) in enumerate(service_processes):
             if service_p.poll() is not None:
-                service_processes[i] = start_face_services(root_path, [service_module], None)[1]
+                service_processes[i][1] = start_face_services(root_path, [service_module], None)[1]
             if snetd_p is not None and snetd_p.poll() is not None:
                 service_processes[i][3] = start_snetd(root_path, snetd_conf)
         time.sleep(5)
