@@ -1,6 +1,6 @@
 syntax = 'proto3';
 
-import "services/grpc/face_common.proto";
+import "face_common.proto";
 
 message FaceRecognitionHeader {
     repeated BoundingBox faces = 1;

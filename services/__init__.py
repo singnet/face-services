@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.joinpath('grpc')))
+
 registry = {
     'face_detect_server': {
         'grpc': 6001,

@@ -5,9 +5,11 @@ import cv2
 import dlib
 
 import grpc
-import services.face_recognition_server
+import services.face_identity_server
 from clients.face_recognition_client import recognise_face
-import services.grpc.face_recognition_pb2_grpc
+
+import face_recognition_pb2_grpc
+
 import numpy as np
 
 from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated_faces
@@ -18,7 +20,7 @@ class TestFaceRecognitionGRPC(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.server = services.face_recognition_server.serve(max_workers=2, port=cls.test_port)
+        cls.server = services.face_identity_server.serve(max_workers=2, port=cls.test_port)
         cls.server.start()
 
     @classmethod
@@ -27,7 +29,7 @@ class TestFaceRecognitionGRPC(unittest.TestCase):
 
     def setUp(self):
         self.channel = grpc.insecure_channel('localhost:' + str(self.test_port))
-        self.stub = services.grpc.face_recognition_pb2_grpc.FaceRecognitionStub(self.channel)
+        self.stub = face_recognition_pb2_grpc.FaceRecognitionStub(self.channel)
 
     def tearDown(self):
         pass

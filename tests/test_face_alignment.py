@@ -8,8 +8,8 @@ import dlib
 from skimage import io as ioimg
 
 import grpc
-import services.face_alignment_server
-import services.grpc.face_alignment_pb2_grpc
+import services.face_align_server
+import face_alignment_pb2_grpc
 from clients.face_alignment_client import align_face
 from faceutils import render_face_alignment_debug_image
 
@@ -22,7 +22,7 @@ class TestFaceAlignmentGRPC(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.server = services.face_alignment_server.serve(max_workers=2, port=cls.test_port)
+        cls.server = services.face_align_server.serve(max_workers=2, port=cls.test_port)
         cls.server.start()
 
     @classmethod
@@ -31,7 +31,7 @@ class TestFaceAlignmentGRPC(unittest.TestCase):
 
     def setUp(self):
         self.channel = grpc.insecure_channel('localhost:' + str(self.test_port))
-        self.stub = services.grpc.face_alignment_pb2_grpc.FaceAlignmentStub(self.channel)
+        self.stub = face_alignment_pb2_grpc.FaceAlignmentStub(self.channel)
 
     def tearDown(self):
         pass
