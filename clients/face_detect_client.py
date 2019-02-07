@@ -5,20 +5,13 @@ import services.grpc.face_detect_pb2
 import services.grpc.face_detect_pb2_grpc
 from services.grpc.face_common_pb2 import ImageRGB
 
-def read_in_chunks(filename, chunk_size=1024*64):
+def make_request(filename):
     with open(filename, 'rb') as infile:
-        while True:
-            chunk = infile.read(chunk_size)
-            if chunk:
-                yield ImageRGB(content=chunk)
-            else:
-                # The chunk was empty, which means we're at the end
-                # of the file
-                return
+        data = infile.read()
+        return ImageRGB(content=data)
 
 def find_faces(stub, image_fn):
-    img_iterator = read_in_chunks(image_fn)
-    return stub.FindFace(img_iterator)
+    return stub.FindFace(make_request(image_fn))
 
 def run(image_fn):
     channel = grpc.insecure_channel('localhost:50051')

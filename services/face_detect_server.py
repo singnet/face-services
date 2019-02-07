@@ -73,7 +73,7 @@ class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
 
         self.face_detector = None
 
-    def FindFace(self, request_iterator, context):
+    def FindFace(self, request, context):
         # Would be faster to do this on initialisation, but unsure about grpc worker threads and thread-safety of
         # dlib and opencv.
         self.face_detector = get_detector(self.algorithm)
@@ -81,9 +81,7 @@ class FaceDetectServicer(services.grpc.face_detect_pb2_grpc.FaceDetectServicer):
             raise Exception("Unknown algorithm")
 
         image_data = bytearray()
-
-        for data in request_iterator:
-            image_data.extend(bytes(data.content))
+        image_data.extend(bytes(request.content))
 
         img_bytes = io.BytesIO(image_data)
         img = ioimg.imread(img_bytes)

@@ -6,26 +6,18 @@ import services.grpc.face_landmarks_pb2_grpc
 from services.grpc.face_landmarks_pb2 import FaceLandmarkHeader, FaceLandmarkRequest, Empty
 from services.grpc.face_common_pb2 import ImageRGB, FaceDetections, BoundingBox
 
-def read_in_chunks(filename, face_bboxes, model="68", chunk_size=1024*64):
+def make_request(filename, face_bboxes, model="68"):
     bboxes = []
     for bbox in face_bboxes:
         bboxes.append(BoundingBox(**bbox))
     header = FaceLandmarkHeader(landmark_model=model, faces=FaceDetections(face_bbox=bboxes))
-    flm = FaceLandmarkRequest(header=header)
-    yield flm
-
     with open(filename, 'rb') as infile:
-        while True:
-            chunk = infile.read(chunk_size)
-            if chunk:
-                yield FaceLandmarkRequest(image_chunk=ImageRGB(content=chunk))
-            else:
-                # The chunk was empty, which means we're at the end
-                # of the file
-                return
+        chunk = infile.read()
+        return FaceLandmarkRequest(header=header, image_chunk=ImageRGB(content=chunk))
+
 
 def get_face_landmarks(stub, image_fn, face_bboxes, model="68"):
-    img_iterator = read_in_chunks(image_fn, face_bboxes, model=model)
+    img_iterator = make_request(image_fn, face_bboxes, model=model)
     face_landmarks = stub.GetLandmarks(img_iterator)
     return face_landmarks
 

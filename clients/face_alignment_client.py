@@ -9,7 +9,7 @@ from services.grpc.face_common_pb2 import ImageRGB, BoundingBox, Point2D, FaceLa
 from tests.test_images import pre_calculated_faces
 
 
-def read_in_chunks(filename, source_bboxes, chunk_size=1024*64):
+def make_request(filename, source_bboxes):
     boxes = [BoundingBox(**b) for b in source_bboxes]
     #source_p2d = [Point2D(x=int(p[0]), y=int(p[1])) for p in source_pts]
     #target_p2d = [Point2D(x=int(p[0]), y=int(p[1])) for p in target_pts]
@@ -18,32 +18,20 @@ def read_in_chunks(filename, source_bboxes, chunk_size=1024*64):
     header = services.grpc.face_alignment_pb2.FaceAlignmentHeader(
         source_bboxes=boxes,
     )
-    yield services.grpc.face_alignment_pb2.FaceAlignmentRequest(header=header)
-
+    
     with open(filename, 'rb') as infile:
-        while True:
-            chunk = infile.read(chunk_size)
-            if chunk:
-                yield services.grpc.face_alignment_pb2.FaceAlignmentRequest(image_chunk=ImageRGB(content=chunk))
-            else:
-                # The chunk was empty, which means we're at the end
-                # of the file
-                return
+        chunk = infile.read()
+        return services.grpc.face_alignment_pb2.FaceAlignmentRequest(header=header, image_chunk=ImageRGB(content=chunk))
 
 
 def align_face(stub, image_fn, source_bboxes):
-    img_iterator = read_in_chunks(image_fn, source_bboxes)
+    request = make_request(image_fn, source_bboxes)
     images = []
-    image_data = None
-    for data in stub.AlignFace(img_iterator):
-        if data.HasField("header"):
-            if image_data is not None:
-                images.append(image_data)
-            image_data = bytearray()
-        else:
-            image_data.extend(data.image_chunk.content)
-    if image_data is not None:
-        images.append(image_data)
+    
+    result = stub.AlignFace(request)
+    
+    for i in result.image_chunk:
+        images.append(bytes(i.content))
     return images
 
 

@@ -7,10 +7,8 @@ message FaceRecognitionHeader {
 }
 
 message FaceRecognitionRequest {
-    oneof header_or_chunk {
-        FaceRecognitionHeader header = 1;
-        ImageRGB image_chunk = 2;
-    }
+    FaceRecognitionHeader header = 1;
+    ImageRGB image_chunk = 2;
 }
 
 message FaceRecognitionResponse {
@@ -22,6 +20,6 @@ message FaceIdentity {
 }
 
 service FaceRecognition {
-    rpc RecogniseFace (stream FaceRecognitionRequest) returns (FaceRecognitionResponse) {};
-    rpc RecogniseFacePrealigned (stream FaceRecognitionRequest) returns (FaceRecognitionResponse) {};
+    rpc RecogniseFace (FaceRecognitionRequest) returns (FaceRecognitionResponse) {};
+    rpc RecogniseFacePrealigned (FaceRecognitionRequest) returns (FaceRecognitionResponse) {};
 }

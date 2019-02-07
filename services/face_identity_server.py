@@ -32,20 +32,12 @@ class FaceRecognitionServicer(services.grpc.face_recognition_pb2_grpc.FaceRecogn
     # landmark prediction
     #def RecogniseFacePreAligned(self, request_iterator, context):
 
-    def RecogniseFace(self, request_iterator, context):
+    def RecogniseFace(self, request, context):
         start_time = time.time()
         image_data = bytearray()
-        header = None
-
-        for i, data in enumerate(request_iterator):
-            if i == 0:
-                if data.HasField("header"):
-                    header = data.header
-                    continue
-                else:
-                    raise Exception("No header provided!")
-            else:
-                image_data.extend(bytes(data.image_chunk.content))
+        
+        header = request.header
+        image_data.extend(bytes(request.image_chunk.content))
 
         img_bytes = io.BytesIO(image_data)
         img = ioimg.imread(img_bytes)

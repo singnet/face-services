@@ -8,10 +8,8 @@ message FaceLandmarkHeader {
 }
 
 message FaceLandmarkRequest {
-    oneof header_or_chunk {
-        FaceLandmarkHeader header = 1;
-        ImageRGB image_chunk = 2;
-    }
+    FaceLandmarkHeader header = 1;
+    ImageRGB image_chunk = 2;
 }
 
 message FaceLandmarkResponse {
@@ -21,6 +19,6 @@ message FaceLandmarkResponse {
 message Empty {}
 
 service FaceLandmark {
-    rpc GetLandmarks (stream FaceLandmarkRequest) returns (FaceLandmarkResponse) {};
+    rpc GetLandmarks (FaceLandmarkRequest) returns (FaceLandmarkResponse) {};
     rpc GetLandmarkModels (Empty) returns (FaceLandmarkModels) {};
 }

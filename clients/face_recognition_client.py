@@ -9,27 +9,19 @@ from services.grpc.face_common_pb2 import ImageRGB, FaceDetections, BoundingBox
 
 from tests.test_images import pre_calculated_faces
 
-def read_in_chunks(filename, face_bboxes, model="68", chunk_size=1024*64):
+def make_request(filename, face_bboxes, model="68"):
     bboxes = []
     for bbox in face_bboxes:
         bboxes.append(BoundingBox(**bbox))
     header = FaceRecognitionHeader(faces=bboxes)
-    flm = FaceRecognitionRequest(header=header)
-    yield flm
-
+    
     with open(filename, 'rb') as infile:
-        while True:
-            chunk = infile.read(chunk_size)
-            if chunk:
-                yield FaceRecognitionRequest(image_chunk=ImageRGB(content=chunk))
-            else:
-                # The chunk was empty, which means we're at the end
-                # of the file
-                return
+        chunk = infile.read()
+        return FaceRecognitionRequest(header=header, image_chunk=ImageRGB(content=chunk))
 
 
 def recognise_face(stub, image_fn, face_bboxes):
-    img_iterator = read_in_chunks(image_fn, face_bboxes)
+    img_iterator = make_request(image_fn, face_bboxes)
     face_identities = stub.RecogniseFace(img_iterator)
     return face_identities
 

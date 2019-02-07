@@ -14,7 +14,7 @@ from skimage import io as ioimg
 
 import services.common
 import services.grpc.face_alignment_pb2_grpc
-from services.grpc.face_alignment_pb2 import FaceAlignmentResponse, FaceAlignmentResponseHeader
+from services.grpc.face_alignment_pb2 import FaceAlignmentResponse
 from services.grpc.face_common_pb2 import BoundingBox, ImageRGB
 
 
@@ -77,20 +77,11 @@ def do_alignment(img, bbox):
 
 class FaceAlignmentServicer(services.grpc.face_alignment_pb2_grpc.FaceAlignmentServicer):
 
-    def AlignFace(self, request_iterator, context):
+    def AlignFace(self, request, context):
         image_data = bytearray()
 
-        header = None
-
-        for i, data in enumerate(request_iterator):
-            if i == 0:
-                if data.HasField("header"):
-                    header = data.header
-                    continue
-                else:
-                    raise Exception("No header provided!")
-            else:
-                image_data.extend(bytes(data.image_chunk.content))
+        header = request.header
+        image_data.extend(bytes(request.image_chunk.content))
 
         img_bytes = io.BytesIO(image_data)
         img = ioimg.imread(img_bytes)
@@ -104,14 +95,11 @@ class FaceAlignmentServicer(services.grpc.face_alignment_pb2_grpc.FaceAlignmentS
         #source_pts = np.float32([[p.x, p.y] for p in header.source.point])
         #target_pts = np.float32([[p.x, p.y] for p in header.target.point])
 
+        aligned_faces = []
         for bbox in header.source_bboxes:
             raw_dst_img = do_alignment(img, bbox)
-            chunk_size = 1024 * 64
-
-            yield FaceAlignmentResponse(header=FaceAlignmentResponseHeader())
-
-            for i in range(0, len(raw_dst_img), chunk_size):
-                yield FaceAlignmentResponse(image_chunk=ImageRGB(content=raw_dst_img[i:i + chunk_size]))
+            aligned_faces.append(ImageRGB(content=raw_dst_img))
+        return FaceAlignmentResponse(image_chunk=aligned_faces)
 
 
 def serve(max_workers=10, port=50051):

@@ -10,23 +10,14 @@ message FaceAlignmentHeader {
 }
 
 message FaceAlignmentRequest {
-    oneof header_or_chunk {
-        FaceAlignmentHeader header = 1;
-        ImageRGB image_chunk = 2;
-    }
-}
-
-message FaceAlignmentResponseHeader {
-
+    FaceAlignmentHeader header = 1;
+    ImageRGB image_chunk = 2;
 }
 
 message FaceAlignmentResponse {
-    oneof header_or_chunk {
-        FaceAlignmentResponseHeader header = 1;
-        ImageRGB image_chunk = 2;
-    }
+    repeated ImageRGB image_chunk = 1;
 }
 
 service FaceAlignment {
-    rpc AlignFace (stream FaceAlignmentRequest) returns (stream FaceAlignmentResponse) {};
+    rpc AlignFace (FaceAlignmentRequest) returns (FaceAlignmentResponse) {};
 }
