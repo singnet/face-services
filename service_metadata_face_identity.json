@@ -4,7 +4,7 @@
     "encoding": "proto",
     "service_type": "grpc",
     "payment_expiration_threshold": 40320,
-    "model_ipfs_hash": "QmWZYVRazdN1cZvErzu99hEyJQJ2EvqQqEShqCTc4bmmNG",
+    "model_ipfs_hash": "QmaKAEGfhMyTchaWSa5Wtpdha1FQzXgsPVZVkifHEVFq21",
     "mpe_address": "0x39f31Ac7B393fE2C6660b95b878FEB16eA8f3156",
     "pricing": {
         "price_model": "fixed_price",
