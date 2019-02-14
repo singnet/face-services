@@ -19,5 +19,5 @@ snet service update-metadata --yes --metadata-file service_metadata_face_align.j
 
 mkdir -p services/grpc/snet_hack/face_identity
 cp services/grpc/face_{recognition,common}.proto services/grpc/snet_hack/face_identity/.
-#snet service metadata-set-model --metadata-file service_metadata_face_identity.json services/grpc/snet_hack/face_identity
-#snet service update-metadata --yes --metadata-file service_metadata_face_identity.json snet face-identity
+snet service metadata-set-model --metadata-file service_metadata_face_identity.json services/grpc/snet_hack/face_identity
+snet service update-metadata --yes --metadata-file service_metadata_face_identity.json snet face-identity
