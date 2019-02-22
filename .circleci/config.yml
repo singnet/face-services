@@ -70,7 +70,7 @@ jobs:
       SERVICE_NAME: face-services
       DOCKER_ORG: singularitynet
       SNETD_PORT: 6201-6204
-      SNETD_CONFIG: "."
+      SNETD_CONFIG: "config/kovan/."
       ETCD_VOLUME: face-services-etcd
       ETCD_CONTAINER_FOLDER: /face-services/etcd/
     steps:
@@ -82,6 +82,26 @@ jobs:
               docker pull $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1
               docker stop $SERVICE_NAME && docker rm $SERVICE_NAME
               docker run --runtime=nvidia --name $SERVICE_NAME --restart unless-stopped -v $ETCD_VOLUME:$ETCD_CONTAINER_FOLDER -p $SNETD_PORT:$SNETD_PORT -di $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1 python3.6 run_services.py --daemon-config-path $SNETD_CONFIG
+            EOF
+  deploy:
+    machine:
+      enabled: true
+    environment:
+      SERVICE_NAME: face-services-ropsten
+      DOCKER_ORG: singularitynet
+      SNETD_PORT: 6301-6304
+      SNETD_CONFIG: "config/ropsten/."
+      ETCD_VOLUME: face-services-ropsten-etcd
+      ETCD_CONTAINER_FOLDER: /face-services/etcd/
+    steps:
+      - run:
+          name: Deploy Over SSH
+          command: |
+            ssh $SSH_USER@$SSH_HOST << EOF
+              docker login -u $DOCKER_HUB_USER_ID -p $DOCKER_HUB_PWD;
+              docker pull $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1
+              docker stop $SERVICE_NAME && docker rm $SERVICE_NAME
+              docker run --runtime=nvidia --name $SERVICE_NAME --restart unless-stopped -v /etc/letsencrypt:/etc/letsencrypt -v $ETCD_VOLUME:$ETCD_CONTAINER_FOLDER -p $SNETD_PORT:$SNETD_PORT -di $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1 python3.6 run_services.py --daemon-config-path $SNETD_CONFIG
             EOF
 workflows:
   version: 2

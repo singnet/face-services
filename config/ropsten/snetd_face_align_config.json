@@ -1,0 +1,40 @@
+{
+"DAEMON_END_POINT": "0.0.0.0:6303",
+"ETHEREUM_JSON_RPC_ENDPOINT": "https://ropsten.infura.io",
+"IPFS_END_POINT": "http://ipfs.singularitynet.io:80",
+"REGISTRY_ADDRESS_KEY": "0xe331bf20044a5b24c1a744abc90c1fd711d2c08d",
+"PASSTHROUGH_ENABLED": true,
+"PASSTHROUGH_ENDPOINT": "http://localhost:6003",
+"ORGANIZATION_ID": "snet",
+"SERVICE_ID": "face-align",
+
+"ssl_cert": "/etc/letsencrypt/live/services-1.snet.sh/fullchain.pem",
+"ssl_key": "/etc/letsencrypt/live/services-1.snet.sh/privkey.pem",
+
+"payment_channel_storage_client": {
+    "connection_timeout": "5s",
+    "request_timeout": "3s",
+    "endpoints": ["http://127.0.0.1:2383"]
+},
+"payment_channel_storage_server": {
+    "id": "storage-3",
+    "host" : "127.0.0.1",
+    "client_port": 2383,
+    "peer_port": 2384,
+    "token": "unique-token",
+    "cluster": "storage-3=http://127.0.0.1:2384",
+    "data_dir": "etcd/storage-data-dir-3.etcd",
+    "enabled": true
+},
+
+"LOG": {
+    "LEVEL": "debug",
+        "output": {
+                        "current_link": "./snetd-face-align.log",
+                        "file_pattern": "./snetd-face-align.%Y%m%d.log",
+                        "rotation_count": 0,
+                        "rotation_time_in_sec": 86400,
+                        "type": "file"
+        }
+    }
+} 

@@ -1,0 +1,40 @@
+{
+"DAEMON_END_POINT": "0.0.0.0:6301",
+"ETHEREUM_JSON_RPC_ENDPOINT": "https://ropsten.infura.io",
+"IPFS_END_POINT": "http://ipfs.singularitynet.io:80",
+"REGISTRY_ADDRESS_KEY": "0xe331bf20044a5b24c1a744abc90c1fd711d2c08d",
+"PASSTHROUGH_ENABLED": true,
+"PASSTHROUGH_ENDPOINT": "http://localhost:6001",
+"ORGANIZATION_ID": "snet",
+"SERVICE_ID": "face-detect",
+
+"ssl_cert": "/etc/letsencrypt/live/services-1.snet.sh/fullchain.pem",
+"ssl_key": "/etc/letsencrypt/live/services-1.snet.sh/privkey.pem",
+
+"payment_channel_storage_client": {
+    "connection_timeout": "5s",
+    "request_timeout": "3s",
+    "endpoints": ["http://127.0.0.1:2379"]
+},
+"payment_channel_storage_server": {
+    "id": "storage-1",
+    "host" : "127.0.0.1",
+    "client_port": 2379,
+    "peer_port": 2380,
+    "token": "unique-token",
+    "cluster": "storage-1=http://127.0.0.1:2380",
+    "data_dir": "etcd/storage-data-dir-1.etcd",
+    "enabled": true
+},
+
+"LOG": {
+    "LEVEL": "debug",
+        "output": {
+                        "current_link": "./snetd-face-detect.log",
+                        "file_pattern": "./snetd-face-detect.%Y%m%d.log",
+                        "rotation_count": 0,
+                        "rotation_time_in_sec": 86400,
+                        "type": "file"
+        }
+    }
+} 
