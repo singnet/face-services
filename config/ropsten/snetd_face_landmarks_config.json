@@ -2,7 +2,7 @@
 "DAEMON_END_POINT": "0.0.0.0:6302",
 "ETHEREUM_JSON_RPC_ENDPOINT": "https://ropsten.infura.io",
 "IPFS_END_POINT": "http://ipfs.singularitynet.io:80",
-"REGISTRY_ADDRESS_KEY": "0xe331bf20044a5b24c1a744abc90c1fd711d2c08d",
+"REGISTRY_ADDRESS_KEY": "0x5156fde2ca71da4398f8c76763c41bc9633875e4",
 "PASSTHROUGH_ENABLED": true,
 "PASSTHROUGH_ENDPOINT": "http://localhost:6002",
 "ORGANIZATION_ID": "snet",
