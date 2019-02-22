@@ -84,7 +84,7 @@ jobs:
               docker stop $CONTAINER_NAME && docker rm $CONTAINER_NAME
               docker run --runtime=nvidia --name $SERVICE_NAME --restart unless-stopped -v $ETCD_VOLUME:$ETCD_CONTAINER_FOLDER -p $SNETD_PORT:$SNETD_PORT -di $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1 python3.6 run_services.py --daemon-config-path $SNETD_CONFIG
             EOF
-  deploy:
+  deploy-ropsten:
     machine:
       enabled: true
     environment:
@@ -111,6 +111,12 @@ workflows:
     jobs:
       - build-container
       - deploy:
+          requires:
+            - build-container
+          filters:
+            branches:
+              only: master
+      - deploy-ropsten:
           requires:
             - build-container
           filters:
