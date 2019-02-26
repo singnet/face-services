@@ -15,7 +15,7 @@ publish_service() {
 
     snet service metadata-init --metadata-file $MD_FILE services/grpc/snet_hack/$SERVICE_NAME $SERVICE_NAME $PAYMENT_ADDRESS
     snet service metadata-set-fixed-price --metadata-file $MD_FILE $PRICE
-    snet service metadata-add-endpoints --metadata-file $MD_FILE $HOST:$PORT
+    snet service metadata-add-endpoints --metadata-file $MD_FILE $HOST:$SNETD_PORT
     snet service publish -y --metadata-file $MD_FILE $ORG $SERVICE_NAME
 
     cat << EOF > $SNETD_CONFIG

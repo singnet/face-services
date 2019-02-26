@@ -20,7 +20,7 @@
     "endpoints": [
         {
             "group_name": "default_group",
-            "endpoint": "https://services-1.snet.sh:"
+            "endpoint": "https://services-1.snet.sh:6301"
         }
     ]
 }
