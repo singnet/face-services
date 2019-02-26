@@ -1,5 +1,5 @@
 FROM python:3.6.5-stretch
-RUN apt-get update && apt-get install -y build-essential cmake
+RUN apt-get update && apt-get install -y build-essential cmake  && echo 1
 
 # Install snet daemon
 ARG SNETD_VERSION=v0.1.7
