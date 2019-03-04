@@ -1,0 +1,41 @@
+{
+"DAEMON_END_POINT": "0.0.0.0:6404",
+"ETHEREUM_JSON_RPC_ENDPOINT": "https://mainnet.infura.io",
+"IPFS_END_POINT": "http://ipfs.singularitynet.io:80",
+"REGISTRY_ADDRESS_KEY": "0xb3180a92e210b45e3447976a412ac0df859febaf",
+"PASSTHROUGH_ENABLED": true,
+"PASSTHROUGH_ENDPOINT": "http://localhost:6004",
+"ORGANIZATION_ID": "snet",
+"SERVICE_ID": "face-identity",
+
+"ssl_cert": "/etc/letsencrypt/live/services-1.snet.sh/fullchain.pem",
+"ssl_key": "/etc/letsencrypt/live/services-1.snet.sh/privkey.pem",
+
+
+"payment_channel_storage_client": {
+    "connection_timeout": "5s",
+    "request_timeout": "3s",
+    "endpoints": ["http://127.0.0.1:2385"]
+},
+"payment_channel_storage_server": {
+    "id": "storage-4",
+    "host" : "127.0.0.1",
+    "client_port": 2385,
+    "peer_port": 2386,
+    "token": "unique-token",
+    "cluster": "storage-4=http://127.0.0.1:2386",
+    "data_dir": "etcd/storage-data-dir-4.etcd",
+    "enabled": true
+},
+
+"LOG": {
+    "LEVEL": "debug",
+        "output": {
+                        "current_link": "./snetd-face-identity.log",
+                        "file_pattern": "./snetd-face-identity.%Y%m%d.log",
+                        "rotation_count": 0,
+                        "rotation_time_in_sec": 86400,
+                        "type": "file"
+        }
+    }
+} 
