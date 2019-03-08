@@ -7,7 +7,7 @@ RUN add-apt-repository -y ppa:deadsnakes/ppa && \
       curl https://bootstrap.pypa.io/get-pip.py | python3.6
 
 # Install snet daemon
-ARG SNETD_VERSION=v0.1.7
+ARG SNETD_VERSION=v0.1.8
 RUN mkdir -p /tmp/snetd && cd /tmp/snetd && \
       curl -OL https://github.com/singnet/snet-daemon/releases/download/$SNETD_VERSION/snet-daemon-$SNETD_VERSION-linux-amd64.tar.gz && \
       tar -xvf snet-daemon-$SNETD_VERSION-linux-amd64.tar.gz && \
