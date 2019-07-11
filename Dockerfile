@@ -2,7 +2,7 @@ FROM python:3.6.5-stretch
 RUN apt-get update && apt-get install -y build-essential cmake  && echo 1
 
 # Install snet daemon
-ARG SNETD_VERSION=v0.1.8
+ARG SNETD_VERSION=v1.0.0
 RUN mkdir -p /tmp/snetd && cd /tmp/snetd && \
       curl -OL https://github.com/singnet/snet-daemon/releases/download/$SNETD_VERSION/snet-daemon-$SNETD_VERSION-linux-amd64.tar.gz && \
       tar -xvf snet-daemon-$SNETD_VERSION-linux-amd64.tar.gz && \
