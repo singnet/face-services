@@ -3,10 +3,10 @@ import logging
 import os.path
 
 import grpc
-import services.face_landmarks_server
 
-import services.grpc.face_landmarks_pb2
-import services.grpc.face_landmarks_pb2_grpc
+from services import registry
+
+from services.grpc.face_landmarks_pb2_grpc import FaceLandmarkStub
 from services.grpc.face_landmarks_pb2 import FaceLandmarkHeader, FaceLandmarkRequest, Empty
 from services.grpc.face_common_pb2 import ImageRGB, FaceDetections, BoundingBox
 
@@ -15,22 +15,13 @@ from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated
 
 class BaseTestCase:
     class BaseTestFaceLandmarksGRPC(unittest.TestCase):
-        algorithm = '68'
-        test_port = 7002
-        server = None
-
-        @classmethod
-        def setUpClass(cls):
-            cls.server = services.face_landmarks_server.serve(max_workers=2, port=cls.test_port)
-            cls.server.start()
-
-        @classmethod
-        def tearDownClass(cls):
-            cls.server.stop(0)
+        algorithm = "68"
 
         def setUp(self):
-            self.channel = grpc.insecure_channel('localhost:' + str(self.test_port))
-            self.stub = services.grpc.face_landmarks_pb2_grpc.FaceLandmarkStub(self.channel)
+            service_name = "face_landmarks_server"
+            port = registry[service_name]["grpc"]
+            self.channel = grpc.insecure_channel('localhost:{}'.format(port))
+            self.stub = FaceLandmarkStub(self.channel)
 
         def tearDown(self):
             pass
@@ -48,7 +39,7 @@ class BaseTestCase:
                 self.assertEqual(len(result.landmarked_faces), len(bboxes))
                 self.assertEqual(len(result.landmarked_faces[0].point), int(self.algorithm))
 
-        def test_get_landmarks_multiple_faces(self):
+        def test_get_landmarks(self):
             for img_fn in multiple_faces:
                 bboxes = pre_calculated_faces[os.path.basename(img_fn)]
                 logging.debug("Testing face landmark prediction %s with multiple faces %s" % (self.algorithm, img_fn,))

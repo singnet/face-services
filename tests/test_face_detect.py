@@ -2,9 +2,10 @@ import unittest
 import logging
 
 import grpc
-import services.face_detect_server
-import services.grpc.face_detect_pb2
-import services.grpc.face_detect_pb2_grpc
+
+from services import registry
+
+from services.grpc.face_detect_pb2_grpc import FaceDetectStub
 from services.grpc.face_common_pb2 import ImageRGB
 
 from faceutils import render_face_detect_debug_image
@@ -15,22 +16,11 @@ log = logging.getLogger("test.face_detect")
 
 class BaseTestCase:
     class BaseTestFaceDetectGRPC(unittest.TestCase):
-        algorithm = ""
-        test_port = 7001
-        server = None
-
-        @classmethod
-        def setUpClass(cls):
-            cls.server = services.face_detect_server.serve(algorithm=cls.algorithm, max_workers=2, port=cls.test_port)
-            cls.server.start()
-
-        @classmethod
-        def tearDownClass(cls):
-            cls.server.stop(0)
-
         def setUp(self):
-            self.channel = grpc.insecure_channel('localhost:' + str(self.test_port))
-            self.stub = services.grpc.face_detect_pb2_grpc.FaceDetectStub(self.channel)
+            service_name = "face_detect_server"
+            port = registry[service_name]["grpc"]
+            self.channel = grpc.insecure_channel('localhost:{}'.format(port))
+            self.stub = FaceDetectStub(self.channel)
 
         def tearDown(self):
             pass
@@ -49,7 +39,6 @@ class TestFaceDetectGRPC_DlibCNN(BaseTestCase.BaseTestFaceDetectGRPC):
             result = self.stub.FindFace(request)
             log.debug(str(result.face_bbox))
             self.assertEqual(len(result.face_bbox), 1)
-            render_face_detect_debug_image(self, img_fn, result)
 
     def test_find_multiple_faces(self):
         for img_fn in multiple_faces:
@@ -60,7 +49,6 @@ class TestFaceDetectGRPC_DlibCNN(BaseTestCase.BaseTestFaceDetectGRPC):
             result = self.stub.FindFace(request)
             self.assertGreater(len(result.face_bbox), 1)
             log.debug(str(result.face_bbox))
-            render_face_detect_debug_image(self, img_fn, result)
 
     def test_find_no_faces(self):
         for img_fn in no_faces:
@@ -71,7 +59,6 @@ class TestFaceDetectGRPC_DlibCNN(BaseTestCase.BaseTestFaceDetectGRPC):
             result = self.stub.FindFace(request)
             self.assertEqual(len(result.face_bbox), 0)
             log.debug(str(result.face_bbox))
-            render_face_detect_debug_image(self, img_fn, result)
 
 
 class TestFaceDetectGRPC_DlibHOG(BaseTestCase.BaseTestFaceDetectGRPC):
