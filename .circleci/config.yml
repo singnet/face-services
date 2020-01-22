@@ -217,6 +217,7 @@ jobs:
           face_detect_daemon_pk: ${PK_FACE_DETECT}
           face_identity_daemon_pk: ${PK_FACE_IDENTITY}
           face_landmarks_daemon_pk: ${PK_FACE_LANDMARKS}
+          docker_nvidia: true
           docker_image_name: face-services
           docker_container_name: FACE_SERVICES
 
