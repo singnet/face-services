@@ -12,7 +12,7 @@ from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated
 
 
 class TestFaceRecognitionGRPC(unittest.TestCase):
-    test_port = 6004
+    test_port = 7004
     server = None
 
     @classmethod

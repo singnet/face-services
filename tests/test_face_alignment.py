@@ -12,7 +12,7 @@ from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated
 
 
 class TestFaceAlignmentGRPC(unittest.TestCase):
-    test_port = 6003
+    test_port = 7003
     server = None
 
     @classmethod

@@ -1,3 +1,5 @@
+requests
+tqdm
 dlib
 opencv-contrib-python
 grpcio

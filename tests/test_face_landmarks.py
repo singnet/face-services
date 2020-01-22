@@ -15,7 +15,7 @@ from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated
 class BaseTestCase:
     class BaseTestFaceLandmarksGRPC(unittest.TestCase):
         algorithm = '68'
-        test_port = 6002
+        test_port = 7002
         server = None
 
         @classmethod

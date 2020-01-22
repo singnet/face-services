@@ -15,7 +15,7 @@ log = logging.getLogger("test.face_detect")
 class BaseTestCase:
     class BaseTestFaceDetectGRPC(unittest.TestCase):
         algorithm = ""
-        test_port = 6001
+        test_port = 7001
         server = None
 
         @classmethod
@@ -37,7 +37,7 @@ class BaseTestCase:
 
 class TestFaceDetectGRPC_DlibCNN(BaseTestCase.BaseTestFaceDetectGRPC):
     algorithm = 'dlib_cnn'
-    test_port = 6001
+    test_port = 7001
 
     def test_find_single_face(self):
         for img_fn in one_face:
@@ -66,7 +66,7 @@ class TestFaceDetectGRPC_DlibCNN(BaseTestCase.BaseTestFaceDetectGRPC):
 
 class TestFaceDetectGRPC_DlibHOG(BaseTestCase.BaseTestFaceDetectGRPC):
     algorithm = 'dlib_hog'
-    test_port = 6001
+    test_port = 7001
 
     def test_find_single_face(self):
         for img_fn in one_face:
@@ -95,7 +95,7 @@ class TestFaceDetectGRPC_DlibHOG(BaseTestCase.BaseTestFaceDetectGRPC):
 
 class TestFaceDetectGRPC_HaarCascade(BaseTestCase.BaseTestFaceDetectGRPC):
     algorithm = 'haar_cascade'
-    test_port = 6001
+    test_port = 7001
 
     def test_find_single_face(self):
         for img_fn in one_face:
