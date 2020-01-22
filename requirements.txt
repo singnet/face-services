@@ -1,4 +1,3 @@
-snet-cli
 dlib
 opencv-contrib-python
 grpcio

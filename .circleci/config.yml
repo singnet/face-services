@@ -202,7 +202,7 @@ jobs:
     working_directory: ~/singnet
     environment:
       CERTS_DIR: singnet/.certs
-      SERVICE_RUN_COMMAND: bash -c "git pull;python3.6 run_service.py --ssl --metering"
+      SERVICE_RUN_COMMAND: bash -c "git pull;python3.6 run_services.py --ssl --metering"
       SERVICE_TEST_COMMAND: bash -c "sleep 10;python3.6 -m unittest"
       SNETD_PORT_MAINNET: 6401-6404
       SNETD_PORT_ROPSTEN: 6301-6304
