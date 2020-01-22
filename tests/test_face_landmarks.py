@@ -1,8 +1,6 @@
 import unittest
 import logging
 import os.path
-import cv2
-import dlib
 
 import grpc
 import services.face_landmarks_server
@@ -16,7 +14,8 @@ from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated
 
 class BaseTestCase:
     class BaseTestFaceLandmarksGRPC(unittest.TestCase):
-        test_port = 6005
+        algorithm = '68'
+        test_port = 6002
         server = None
 
         @classmethod
@@ -71,11 +70,11 @@ class BaseTestCase:
 
 class TestFaceLandmarksGRPC_Dlib68(BaseTestCase.BaseTestFaceLandmarksGRPC):
     algorithm = '68'
-    test_port = 6005
+
 
 class TestFaceLandmarksGRPC_Dlib5(BaseTestCase.BaseTestFaceLandmarksGRPC):
     algorithm = '5'
-    test_port = 6006
+
 
 if __name__ == '__main__':
     unittest.main()

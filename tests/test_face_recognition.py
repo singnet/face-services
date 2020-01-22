@@ -1,8 +1,6 @@
 import unittest
 import logging
 import os.path
-import cv2
-import dlib
 
 import grpc
 import services.face_identity_server
@@ -10,12 +8,11 @@ from clients.face_recognition_client import recognise_face
 
 import face_recognition_pb2_grpc
 
-import numpy as np
-
 from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated_faces
 
+
 class TestFaceRecognitionGRPC(unittest.TestCase):
-    test_port = 6008
+    test_port = 6004
     server = None
 
     @classmethod
@@ -40,7 +37,7 @@ class TestFaceRecognitionGRPC(unittest.TestCase):
             logging.debug(
                 "Testing face recognition on file with a single face %s" % (img_fn,))
             result = recognise_face(self.stub, img_fn, bboxes)
-            #print(np.array([f for f in result.identities[0].identity]))
+            # print(np.array([f for f in result.identities[0].identity]))
             self.assertEqual(len(result.identities), len(bboxes))
 
     def test_recognise_multiple_faces(self):
@@ -49,7 +46,7 @@ class TestFaceRecognitionGRPC(unittest.TestCase):
             logging.debug(
                 "Testing face recognition on file with multiple faces %s" % (img_fn,))
             result = recognise_face(self.stub, img_fn, bboxes)
-            #for i in range(0, len(bboxes)):
+            # for i in range(0, len(bboxes)):
             #    print(repr(np.array([f for f in result.identities[i].identity])))
             self.assertEqual(len(result.identities), len(bboxes))
 
@@ -60,7 +57,7 @@ class TestFaceRecognitionGRPC(unittest.TestCase):
             logging.debug("Testing face recognition on file with no faces %s" % (img_fn,))
             result = recognise_face(self.stub, img_fn, bboxes)
             # Should still have the right number of responses, even if they are meaningless
-            #print(np.array([f for f in result.identities[0].identity]))
+            # print(np.array([f for f in result.identities[0].identity]))
             self.assertEqual(len(result.identities), len(bboxes))
 
 

@@ -1,152 +1,227 @@
-defaults: &default_steps
-  steps:
-    - checkout
-    - setup_remote_docker
-    - run:
-        name: Install dependencies
-        command: |
-          apk add --no-cache python3 && \
-            python3 -m ensurepip && \
-            rm -r /usr/lib/python*/ensurepip && \
-            pip3 install --upgrade pip setuptools
-          pip3 install \
-            requests \
-            tqdm
-    - restore_cache:
-        keys:
-          - v2-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-    - run:
-        name: Load Docker image layer cache
-        command: |
-          set +o pipefail
-          mkdir -p /caches
-          ls -la /caches
-          docker load -i /caches/docker_image.tar | true
-    - run:
-        name: Fetch models
-        command: |
-          python3 fetch_models.py /caches/models
-          ls -la models
-    - run:
-        name: Build application Docker image
-        command: |
-          docker build --cache-from=$SERVICE_NAME -t $SERVICE_NAME -f Dockerfile.gpu .
-    - run:
-        name: Save Docker image layer cache
-        command: |
-          mkdir -p /caches
-          docker save -o /caches/docker_image.tar $SERVICE_NAME
-          ls -la /caches/
-    - save_cache:
-        key: v2-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}-{{ epoch }}
-        paths:
-          - /caches/docker_image.tar
-          - /caches/models
-    - deploy:
-        name: Push Docker image
-        command: |
-          if [ "$CIRCLE_BRANCH" == "master" ]; then
-            docker login -u $DOCKER_HUB_USER_ID -p $DOCKER_HUB_PWD
-            docker tag $SERVICE_NAME $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1
-            docker tag $SERVICE_NAME $DOCKER_ORG/$SERVICE_NAME:latest
-            docker push $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1
-            docker push $DOCKER_ORG/$SERVICE_NAME:latest
-          fi
-version: 2
-jobs:
-  build-container:
-    working_directory: /face-services
+commands:
+  build_and_deploy:
+    description: "Build/Test and Deploy SingularityNET Services"
+    parameters:
+      domain:
+        type: string
+        default: ""
+      ssh_user_env_var:
+        type: string
+        default: ""
+      ssh_host_env_var:
+        type: string
+        default: ""
+      infura_api_key:
+        type: string
+        default: ""
+      face_align_daemon_pk:
+        type: string
+        default: ""
+      face_detect_daemon_pk:
+        type: string
+        default: ""
+      face_identity_daemon_pk:
+        type: string
+        default: ""
+      face_landmarks_daemon_pk:
+        type: string
+        default: ""
+      docker_nvidia:
+        type: boolean
+        default: false
+      docker_image_name:
+        type: string
+        default: ""
+      docker_container_name:
+        type: string
+        default: ""
+      docker_etcd_host_dir:
+        type: string
+        default: ""
+      docker_etcd_container_dir:
+        type: string
+        default: ""
+      docker_mount_volumes:
+        type: boolean
+        default: false
+      docker_mount_src:
+        type: string
+        default: ""
+      docker_mount_dest:
+        type: string
+        default: ""
+    steps:
+      - run:
+          name: Setting Up
+          command: |
+            export SSH_USER=<< parameters.ssh_user_env_var >>
+            export SSH_HOST=<< parameters.ssh_host_env_var >>
+            export DOCKER_CONTAINER_NAME=<< parameters.docker_container_name >>
+            export DOCKER_DEPLOY=$([ "${CIRCLE_PROJECT_USERNAME}"/"${CIRCLE_BRANCH}" = "singnet/master" ] && echo "true" || echo "false")
+            export PROD_TAG=$([ "${DOCKER_DEPLOY}" = "true" ] && echo "PROD_" || echo "")
+            echo "Setting Up..."
+            echo $(.circleci/check_md5.sh) >> docker_rebuild
+            echo "FILES_CHANGED=$(cat docker_rebuild)"
+
+      - run:
+          name: Removing old Docker Container (Previous Builds)
+          command: |
+            export SSH_USER=<< parameters.ssh_user_env_var >>
+            export SSH_HOST=<< parameters.ssh_host_env_var >>
+            export DOCKER_IMAGE_NAME=<< parameters.docker_image_name >>
+            export DOCKER_CONTAINER_NAME=<< parameters.docker_container_name >>
+            export DOCKER_DEPLOY=$([ "${CIRCLE_PROJECT_USERNAME}"/"${CIRCLE_BRANCH}" = "singnet/master" ] && echo "true" || echo "false")
+            export PROD_TAG=$([ "${DOCKER_DEPLOY}" = "true" ] && echo "PROD_" || echo "")
+            echo "Removing old Container (from previous builds)..."
+            ssh -o "StrictHostKeyChecking no" ${SSH_USER}@${SSH_HOST} \<< EOF
+              docker stop ${PROD_TAG}${DOCKER_CONTAINER_NAME}_old || true
+              docker rm ${PROD_TAG}${DOCKER_CONTAINER_NAME}_old || true
+            EOF
+
+      - run:
+          name: Building
+          command: |
+            echo "=========================================== Build Configs ==========================================="
+            export SSH_USER=<< parameters.ssh_user_env_var >>
+            export SSH_HOST=<< parameters.ssh_host_env_var >>
+            export DOCKER_NVIDIA=<< parameters.docker_nvidia >>
+            export DOCKER_IMAGE_NAME=<< parameters.docker_image_name >>
+            export DOCKER_CONTAINER_NAME=<< parameters.docker_container_name >>
+            export DOCKER_MOUNT_VOLUMES=<< parameters.docker_mount_volumes >>
+            export DOCKER_MOUNT_SRC=<< parameters.docker_mount_src >>
+            export DOCKER_MOUNT_DEST=<< parameters.docker_mount_dest >>
+            export ETCD_HOST_DIR=<< parameters.docker_etcd_host_dir >>
+            export ETCD_CONTAINER_DIR=<< parameters.docker_etcd_container_dir >>
+            export DOCKER_DEPLOY=$([ "${CIRCLE_PROJECT_USERNAME}"/"${CIRCLE_BRANCH}" = "singnet/master" ] && echo "true" || echo "false")
+            export PROD_TAG=$([ "${DOCKER_DEPLOY}" = "true" ] && echo "PROD_" || echo "")
+            echo            git_user  : ${CIRCLE_PROJECT_USERNAME}
+            echo            git_repo  : ${CIRCLE_PROJECT_REPONAME}
+            echo            git_branch: ${CIRCLE_BRANCH}
+            echo SSH_USER             : ${SSH_USER}
+            echo SSH_HOST             : ${SSH_HOST}
+            echo DOCKER_NOCACHE       : ${DOCKER_NOCACHE}
+            echo DOCKER_NVIDIA        : ${DOCKER_NVIDIA}
+            echo DOCKER_IMAGE_NAME    : ${DOCKER_IMAGE_NAME}
+            echo DOCKER_CONTAINER_NAME: ${DOCKER_CONTAINER_NAME}
+            echo DOCKER_MOUNT_VOLUMES : ${DOCKER_MOUNT_VOLUMES}
+            echo DOCKER_MOUNT_SRC     : ${DOCKER_MOUNT_SRC}
+            echo DOCKER_MOUNT_DEST    : ${DOCKER_MOUNT_DEST}
+            echo "====================================================================================================="
+            DOCKER_IMAGE_EXISTS=`ssh -o "StrictHostKeyChecking no" ${SSH_USER}@${SSH_HOST} docker images -q ${DOCKER_IMAGE_NAME}:${CIRCLE_PROJECT_USERNAME}`
+            FILES_CHANGED=`cat docker_rebuild`
+            echo DOCKER_IMAGE_EXISTS=${DOCKER_IMAGE_EXISTS}
+            echo FILES_CHANGED=${FILES_CHANGED}
+            ssh -o "StrictHostKeyChecking no" ${SSH_USER}@${SSH_HOST} \<< EOF
+              if [ "$DOCKER_IMAGE_EXISTS" = "" ] || [ "$FILES_CHANGED" != 0 ]; then
+                echo "Building..."
+                docker build \
+                  --build-arg git_owner=${CIRCLE_PROJECT_USERNAME} \
+                  --build-arg git_repo=${CIRCLE_PROJECT_REPONAME} \
+                  --build-arg git_branch=${CIRCLE_BRANCH} \
+                  $([ "${DOCKER_NOCACHE}" = "true" ] && echo "--no-cache" || echo "") \
+                  -t ${DOCKER_IMAGE_NAME}:${CIRCLE_PROJECT_USERNAME} https://raw.githubusercontent.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BRANCH}/Dockerfile
+              else
+                echo "Not Building..."
+              fi
+            EOF
+
+      - run:
+          name: Running new Docker Container
+          command: |
+            echo "============================================ Run Configs ============================================"
+            export SSH_USER=<< parameters.ssh_user_env_var >>
+            export SSH_HOST=<< parameters.ssh_host_env_var >>
+            export INFURA_API_KEY=<< parameters.infura_api_key >>
+            export PK_FACE_ALIGN=<< parameters.face_align_daemon_pk >>
+            export PK_FACE_DETECT=<< parameters.face_detect_daemon_pk >>
+            export PK_FACE_IDENTITY=<< parameters.face_identity_daemon_pk >>
+            export PK_FACE_LANDMARKS=<< parameters.face_landmarks_daemon_pk >>
+            export DOCKER_NVIDIA=<< parameters.docker_nvidia >>
+            export DOCKER_IMAGE_NAME=<< parameters.docker_image_name >>
+            export DOCKER_CONTAINER_NAME=<< parameters.docker_container_name >>
+            export DOCKER_MOUNT_VOLUMES=<< parameters.docker_mount_volumes >>
+            export DOCKER_MOUNT_SRC=<< parameters.docker_mount_src >>
+            export DOCKER_MOUNT_DEST=<< parameters.docker_mount_dest >>
+            export ETCD_HOST_DIR=<< parameters.docker_etcd_host_dir >>
+            export ETCD_CONTAINER_DIR=<< parameters.docker_etcd_container_dir >>
+            export DOCKER_DEPLOY=$([ "${CIRCLE_PROJECT_USERNAME}"/"${CIRCLE_BRANCH}" = "singnet/master" ] && echo "true" || echo "false")
+            export PROD_TAG=$([ "${DOCKER_DEPLOY}" = "true" ] && echo "PROD_" || echo "")
+            echo            git_user  : ${CIRCLE_PROJECT_USERNAME}
+            echo            git_repo  : ${CIRCLE_PROJECT_REPONAME}
+            echo            git_branch: ${CIRCLE_BRANCH}
+            echo SSH_USER             : ${SSH_USER}
+            echo SSH_HOST             : ${SSH_HOST}
+            echo DOCKER_NOCACHE       : ${DOCKER_NOCACHE}
+            echo DOCKER_NVIDIA        : ${DOCKER_NVIDIA}
+            echo DOCKER_IMAGE_NAME    : ${DOCKER_IMAGE_NAME}
+            echo DOCKER_CONTAINER_NAME: ${DOCKER_CONTAINER_NAME}
+            echo DOCKER_MOUNT_VOLUMES : ${DOCKER_MOUNT_VOLUMES}
+            echo DOCKER_MOUNT_SRC     : ${DOCKER_MOUNT_SRC}
+            echo DOCKER_MOUNT_DEST    : ${DOCKER_MOUNT_DEST}
+            echo "====================================================================================================="
+            echo "Running new Container..."
+            ssh -o "StrictHostKeyChecking no" ${SSH_USER}@${SSH_HOST} \<<-EOF
+                  docker stop ${PROD_TAG}${DOCKER_CONTAINER_NAME} || true
+                  docker rename ${PROD_TAG}${DOCKER_CONTAINER_NAME} ${PROD_TAG}${DOCKER_CONTAINER_NAME}_old || true
+                  docker run \
+                  $([ "${DOCKER_NVIDIA}" = "true" ] && echo "--runtime=nvidia" || echo "") \
+                  --name ${PROD_TAG}${DOCKER_CONTAINER_NAME} \
+                  --restart unless-stopped \
+                  -e INFURA_API_KEY=${INFURA_API_KEY} \
+                  -e PK_FACE_ALIGN=${PK_FACE_ALIGN} \
+                  -e PK_FACE_DETECT=${PK_FACE_DETECT} \
+                  -e PK_FACE_IDENTITY=${PK_FACE_IDENTITY} \
+                  -e PK_FACE_LANDMARKS=${PK_FACE_LANDMARKS} \
+                  $([ "${DOCKER_DEPLOY}" = "true" ] && echo "-p ${SNETD_PORT_MAINNET}:${SNETD_PORT_MAINNET}" || echo "") \
+                  $([ "${DOCKER_DEPLOY}" = "true" ] && echo "-p ${SNETD_PORT_ROPSTEN}:${SNETD_PORT_ROPSTEN}" || echo "") \
+                  -v ~/${CERTS_DIR}:/opt/singnet/.certs \
+                  $([ "${DOCKER_DEPLOY}" = "true" ] && echo "-v ~/${ETCD_HOST_DIR}:/${ETCD_CONTAINER_DIR}" || echo "") \
+                  $([ "${DOCKER_MOUNT_VOLUMES}" = "true" ] && echo "-v ${DOCKER_MOUNT_SRC}:${DOCKER_MOUNT_DEST}" || echo "") \
+                  -tdi ${DOCKER_IMAGE_NAME}:${CIRCLE_PROJECT_USERNAME} ${SERVICE_RUN_COMMAND}
+            EOF
+
+      - run:
+          name: Testing local
+          no_output_timeout: 60m
+          command: |
+            export SSH_USER=<< parameters.ssh_user_env_var >>
+            export SSH_HOST=<< parameters.ssh_host_env_var >>
+            export DOCKER_IMAGE_NAME=<< parameters.docker_image_name >>
+            export DOCKER_CONTAINER_NAME=<< parameters.docker_container_name >>
+            export DOCKER_DEPLOY=$([ "${CIRCLE_PROJECT_USERNAME}"/"${CIRCLE_BRANCH}" = "singnet/master" ] && echo "true" || echo "false")
+            export PROD_TAG=$([ "${DOCKER_DEPLOY}" = "true" ] && echo "PROD_" || echo "")
+            ssh -o "StrictHostKeyChecking no" ${SSH_USER}@${SSH_HOST} \<< EOF
+              docker exec -i ${PROD_TAG}${DOCKER_CONTAINER_NAME} ${SERVICE_TEST_COMMAND}
+            EOF
+
+version: 2.1
+jobs:face_align_daemon_pk
+  face-services:
     docker:
-      - image: docker:18.06.1-ce-git
+    - image: circleci/python:3.6.6-node
+    working_directory: ~/singnet
     environment:
-      SERVICE_NAME: face-services
-      ORG: singnet
-      DOCKER_ORG: singularitynet
-    <<: *default_steps
-  deploy:
-    machine:
-      enabled: true
-    environment:
-      SERVICE_NAME: face-services
-      CONTAINER_NAME: face-services
-      DOCKER_ORG: singularitynet
-      SNETD_PORT: 6201-6204
-      SNETD_CONFIG: "config/kovan/."
-      ETCD_VOLUME: face-services-etcd
-      ETCD_CONTAINER_FOLDER: /face-services/etcd/
+      CERTS_DIR: singnet/.certs
+      SERVICE_RUN_COMMAND: bash -c "git pull;python3.6 run_service.py --ssl --metering"
+      SERVICE_TEST_COMMAND: bash -c "sleep 10;python3.6 -m unittest"
+      SNETD_PORT_MAINNET: 6401-6404
+      SNETD_PORT_ROPSTEN: 6301-6304
     steps:
-      - run:
-          name: Deploy Over SSH
-          command: |
-            ssh $SSH_USER@$SSH_HOST << EOF
-              docker login -u $DOCKER_HUB_USER_ID -p $DOCKER_HUB_PWD;
-              docker pull $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1
-              docker stop $CONTAINER_NAME && docker rm $CONTAINER_NAME
-              docker run --runtime=nvidia --name $SERVICE_NAME --restart unless-stopped -v $ETCD_VOLUME:$ETCD_CONTAINER_FOLDER -p $SNETD_PORT:$SNETD_PORT -di $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1 python3.6 run_services.py --daemon-config-path $SNETD_CONFIG
-            EOF
-  deploy-ropsten:
-    machine:
-      enabled: true
-    environment:
-      SERVICE_NAME: face-services
-      CONTAINER_NAME: face-services-ropsten
-      DOCKER_ORG: singularitynet
-      SNETD_PORT: 6301-6304
-      SNETD_CONFIG: "config/ropsten/."
-      ETCD_VOLUME: face-services-ropsten-etcd
-      ETCD_CONTAINER_FOLDER: /face-services/etcd/
-    steps:
-      - run:
-          name: Deploy Over SSH
-          command: |
-            ssh $SSH_USER@$SSH_HOST << EOF
-              docker login -u $DOCKER_HUB_USER_ID -p $DOCKER_HUB_PWD;
-              docker pull $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1
-              docker stop $CONTAINER_NAME && docker rm $CONTAINER_NAME
-              docker run --runtime=nvidia --name $CONTAINER_NAME --restart unless-stopped -v /etc/letsencrypt:/etc/letsencrypt -v $ETCD_VOLUME:$ETCD_CONTAINER_FOLDER -p $SNETD_PORT:$SNETD_PORT -di $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1 python3.6 run_services.py --daemon-config-path $SNETD_CONFIG
-            EOF
-  deploy-mainnet:
-    machine:
-      enabled: true
-    environment:
-      SERVICE_NAME: face-services
-      CONTAINER_NAME: face-services-mainnet
-      DOCKER_ORG: singularitynet
-      SNETD_PORT: 6401-6404
-      SNETD_CONFIG: "config/mainnet/."
-      ETCD_VOLUME: face-services-mainnet-etcd
-      ETCD_CONTAINER_FOLDER: /face-services/etcd/
-    steps:
-      - run:
-          name: Deploy Over SSH
-          command: |
-            ssh $SSH_USER@$SSH_HOST << EOF
-              docker login -u $DOCKER_HUB_USER_ID -p $DOCKER_HUB_PWD;
-              docker pull $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1
-              docker stop $CONTAINER_NAME && docker rm $CONTAINER_NAME
-              docker run --runtime=nvidia --name $CONTAINER_NAME --restart unless-stopped -v /etc/letsencrypt:/etc/letsencrypt -v $ETCD_VOLUME:$ETCD_CONTAINER_FOLDER -p $SNETD_PORT:$SNETD_PORT -di $DOCKER_ORG/$SERVICE_NAME:$CIRCLE_SHA1 python3.6 run_services.py --daemon-config-path $SNETD_CONFIG
-            EOF
+      - checkout
+      - build_and_deploy:
+          domain: ${DOMAIN_FACE_SERVICES}
+          ssh_user_env_var: ${SSH_USER}
+          ssh_host_env_var: ${SSH_HOST}
+          infura_api_key: ${INFURA_API_KEY}
+          face_align_daemon_pk: ${PK_FACE_ALIGN}
+          face_detect_daemon_pk: ${PK_FACE_DETECT}
+          face_identity_daemon_pk: ${PK_FACE_IDENTITY}
+          face_landmarks_daemon_pk: ${PK_FACE_LANDMARKS}
+          docker_image_name: face-services
+          docker_container_name: FACE_SERVICES
+
 workflows:
-  version: 2
-  build-and-maybe-deploy:
+  version: 2.1
+  build_deploy:
     jobs:
-      - build-container
-      - deploy:
-          requires:
-            - build-container
-          filters:
-            branches:
-              only: master
-      - deploy-ropsten:
-          requires:
-            - build-container
-          filters:
-            branches:
-              only: master
-      - deploy-mainnet:
-          requires:
-            - build-container
-          filters:
-            branches:
-              only: master
-  
+      - face-services

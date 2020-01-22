@@ -1,11 +1,6 @@
 import unittest
 import logging
 import os.path
-import io
-
-import cv2
-import dlib
-from skimage import io as ioimg
 
 import grpc
 import services.face_align_server
@@ -17,7 +12,7 @@ from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated
 
 
 class TestFaceAlignmentGRPC(unittest.TestCase):
-    test_port = 6007
+    test_port = 6003
     server = None
 
     @classmethod
@@ -45,7 +40,6 @@ class TestFaceAlignmentGRPC(unittest.TestCase):
             self.assertEqual(len(result), len(bboxes))
             render_face_alignment_debug_image(self, img_fn, result)
 
-
     def test_align_multiple_faces(self):
         for img_fn in multiple_faces:
             bboxes = pre_calculated_faces[os.path.basename(img_fn)]
@@ -54,7 +48,6 @@ class TestFaceAlignmentGRPC(unittest.TestCase):
             result = align_face(self.stub, img_fn, source_bboxes=bboxes)
             self.assertEqual(len(result), len(bboxes))
             render_face_alignment_debug_image(self, img_fn, result)
-
 
     def test_align_no_faces(self):
         for img_fn in no_faces:
