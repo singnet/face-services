@@ -4,9 +4,9 @@ import os.path
 
 import grpc
 import services.face_align_server
-import face_alignment_pb2_grpc
-from clients.face_alignment_client import align_face
-from faceutils import render_face_alignment_debug_image
+from services.grpc.face_common_pb2 import ImageRGB, FaceDetections, BoundingBox
+from services.grpc.face_alignment_pb2 import FaceAlignmentHeader, FaceAlignmentRequest
+from services.grpc.face_alignment_pb2_grpc import FaceAlignmentStub
 
 from tests.test_images import one_face, multiple_faces, no_faces, pre_calculated_faces
 
@@ -26,7 +26,7 @@ class TestFaceAlignmentGRPC(unittest.TestCase):
 
     def setUp(self):
         self.channel = grpc.insecure_channel('localhost:' + str(self.test_port))
-        self.stub = face_alignment_pb2_grpc.FaceAlignmentStub(self.channel)
+        self.stub = FaceAlignmentStub(self.channel)
 
     def tearDown(self):
         pass
@@ -34,30 +34,53 @@ class TestFaceAlignmentGRPC(unittest.TestCase):
     def test_align_single_face(self):
         for img_fn in one_face:
             bboxes = pre_calculated_faces[os.path.basename(img_fn)]
-            logging.debug(
-                "Testing face alignment on file with a single face %s" % (img_fn,))
-            result = align_face(self.stub, img_fn, bboxes)
-            self.assertEqual(len(result), len(bboxes))
-            render_face_alignment_debug_image(self, img_fn, result)
+            logging.debug("Testing face alignment on file with a single face %s" % (img_fn,))
+
+            boxes = [BoundingBox(**b) for b in bboxes]
+            header = FaceAlignmentHeader(source_bboxes=boxes)
+            with open(img_fn, 'rb') as infile:
+                chunk = infile.read()
+                request = services.grpc.face_alignment_pb2.FaceAlignmentRequest(header=header,
+                                                                                image_chunk=ImageRGB(content=chunk))
+            result = self.stub.AlignFace(request)
+            images = []
+            for i in result.image_chunk:
+                images.append(bytes(i.content))
+            self.assertEqual(len(images), len(bboxes))
 
     def test_align_multiple_faces(self):
         for img_fn in multiple_faces:
             bboxes = pre_calculated_faces[os.path.basename(img_fn)]
-            logging.debug(
-                "Testing face alignment on file with multiple faces %s" % (img_fn,))
-            result = align_face(self.stub, img_fn, source_bboxes=bboxes)
-            self.assertEqual(len(result), len(bboxes))
-            render_face_alignment_debug_image(self, img_fn, result)
+            logging.debug("Testing face alignment on file with multiple faces %s" % (img_fn,))
+            boxes = [BoundingBox(**b) for b in bboxes]
+            header = FaceAlignmentHeader(source_bboxes=boxes)
+            with open(img_fn, 'rb') as infile:
+                chunk = infile.read()
+                request = services.grpc.face_alignment_pb2.FaceAlignmentRequest(header=header,
+                                                                                image_chunk=ImageRGB(content=chunk))
+            result = self.stub.AlignFace(request)
+            images = []
+            for i in result.image_chunk:
+                images.append(bytes(i.content))
+            self.assertEqual(len(images), len(bboxes))
 
     def test_align_no_faces(self):
         for img_fn in no_faces:
             # When there is no face, then this checks things don't explode when we give it a face bbox with no face
             bboxes = list(pre_calculated_faces.values())[0]
             logging.debug("Testing face alignment on file with no faces %s" % (img_fn,))
-            result = align_face(self.stub, img_fn, source_bboxes=bboxes)
+            boxes = [BoundingBox(**b) for b in bboxes]
+            header = FaceAlignmentHeader(source_bboxes=boxes)
+            with open(img_fn, 'rb') as infile:
+                chunk = infile.read()
+                request = services.grpc.face_alignment_pb2.FaceAlignmentRequest(header=header,
+                                                                                image_chunk=ImageRGB(content=chunk))
+            result = self.stub.AlignFace(request)
+            images = []
+            for i in result.image_chunk:
+                images.append(bytes(i.content))
             # Should still have the right number of responses, even if they are meaningless
-            self.assertEqual(len(result), len(bboxes))
-            render_face_alignment_debug_image(self, img_fn, result)
+            self.assertEqual(len(images), len(bboxes))
 
 
 if __name__ == '__main__':
