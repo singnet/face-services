@@ -5,7 +5,6 @@ import time
 import subprocess
 import logging
 import pathlib
-import glob
 import json
 import argparse
 
@@ -13,7 +12,7 @@ from services import registry
 
 logging.basicConfig(level=10, format="%(asctime)s - [%(levelname)8s] - "
                                      "%(name)s - %(message)s")
-log = logging.getLogger("run_semantic_segmentation")
+log = logging.getLogger("run_face_services")
 
 
 def main():
@@ -39,8 +38,10 @@ def main():
     
     # All services modules go here
     service_modules = [
-        'services.face_detect_server', 'services.face_landmarks_server',
-        'services.face_align_server', 'services.face_identity_server'
+        'services.face_detect_server',
+        'services.face_landmarks_server',
+        'services.face_align_server',
+        'services.face_identity_server'
     ]
     
     # Call for all the services listed in service_modules
@@ -99,6 +100,9 @@ def start_service(cwd, service_module, run_daemon, run_ssl, run_metering):
                 snetd_configs["ssl_cert"] = "/opt/singnet/.certs/fullchain.pem"
                 snetd_configs["ssl_key"] = "/opt/singnet/.certs/privkey.pem"
             if run_metering:
+                snetd_configs["payent_channel_ca_path"] = "/opt/singnet/.certs/ca.pem"
+                snetd_configs["payent_channel_cert_path"] = "/opt/singnet/.certs/client.pem"
+                snetd_configs["payent_channel_key_path"] = "/opt/singnet/.certs/client-key.pem"
                 snetd_configs["payment_channel_ca_path"] = "/opt/singnet/.certs/ca.pem"
                 snetd_configs["payment_channel_cert_path"] = "/opt/singnet/.certs/client.pem"
                 snetd_configs["payment_channel_key_path"] = "/opt/singnet/.certs/client-key.pem"
