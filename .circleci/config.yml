@@ -195,7 +195,7 @@ commands:
             EOF
 
 version: 2.1
-jobs:face_align_daemon_pk
+jobs:
   face-services:
     docker:
     - image: circleci/python:3.6.6-node
