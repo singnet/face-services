@@ -220,6 +220,8 @@ jobs:
           docker_nvidia: true
           docker_image_name: face-services
           docker_container_name: FACE_SERVICES
+          docker_etcd_host_dir: singnet/etcd/${SERVICE_NAME}/
+          docker_etcd_container_dir: opt/singnet/${CIRCLE_PROJECT_REPONAME}/${SERVICE_DIR}/etcd/
 
 workflows:
   version: 2.1
