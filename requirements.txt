@@ -1,4 +1,5 @@
-snet-cli
+requests
+tqdm
 dlib
 opencv-contrib-python
 grpcio

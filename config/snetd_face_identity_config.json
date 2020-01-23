@@ -1,0 +1,19 @@
+{
+  "daemon_end_point": "0.0.0.0:6404",
+  "ipfs_end_point": "http://ipfs.singularitynet.io:80",
+  "passthrough_enabled": true,
+  "passthrough_endpoint": "http://localhost:6004",
+  "blockchain_network_selected": "main",
+  "organization_id": "snet",
+  "service_id": "face-identity",
+  "log": {
+    "level": "debug",
+    "output": {
+      "current_link": "./snetd-mainnet-identity.log",
+      "file_pattern": "./snetd-mainnet-identity.%Y%m%d.log",
+      "rotation_count": 0,
+      "rotation_time_in_sec": 86400,
+      "type": "file"
+    }
+  }
+}

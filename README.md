@@ -30,7 +30,7 @@ You also need to download various pretrained models and generate the grpc code f
 
 ```
 python fetch_models.py
-build_proto.bat
+sh build_proto.sh
 ```
 
 This repo has been developed on Windows, but is deployed on linux and I've run it on my Macbook.
@@ -56,42 +56,35 @@ There are several hot-keys you can use:
 
 To run the services:
 
+Development:
 ```
-python run_services.py
+python run_services.py --no-daemon
 ```
 
-To run the services, each one fronted by an instance of the SingularityNET daemon (`snetd`), make sure
-you have created your own agent contracts and then use them to generate a directory of config files. One for each
-service. It will ask you for the private key for the identity that created the agent contracts:
-
+Production:
 ```
-python create_snet_config.py --network kovan --detect-address 0x1234 --landmarks-address 0x2345 --alignment-address 0x3456 --recognition-address 0x4567
-python run_services.py --daemon-config-path config/
+python run_services.py --ssl --metering
 ```
 
 There are also Dockerfiles for gpu or cpu deployments. Runtime selection isn't possible because dlib choses
-the execution method at compilation time. 
+the execution method at compilation time.
 
 ## Calling Services on SingularityNet
 
-The clients directory has command line tools for calling each via SingularityNET. Use Kovan, and make sure you
-have snet-cli configured to use an identity with KETH and AGI tokens.
+Through SingularityNET (follow this [link](https://dev.singularitynet.io/tutorials/publish/) 
+to learn how to publish a service and open a payment channel to be able to call it):
+
+Assuming that you have an open channel to this service:
 
 ```
-pip install -r clients/requirements.txt # only needed if you haven't installed the root requirements.txt
-python -m clients.face_detect_jsonrpc_client --image tests/test_images/laos.jpg --snet --out-image ~/laos_face_detect.jpg
-```
+snet client call snet face-detect FindFace '{"file@content":"./tests/test_images/adele_2016.jpg"}'
 
-In the terminal output it should tell you the bounding boxes, which you can then use for the other services, e.g.: 
-```
-python -m clients.face_landmarks_jsonrpc_client --image tests/test_images/laos.jpg --snet --out-image ~/laos_face_landmarks.jpg --face-bb 511,170,283,312 --face-bb 61,252,236,259
+
 ```
 
 ## Service description
 
-Each service defines both a grpc and jsonrpc server. grpc is better formalised and client code is generated,
-but SingularityNet currently only supports jsonrpc. I've tried to keep the method names the same, except
-that grpc uses CamelCase (e.g. FindFace) whereas jsonrpc method names use underscores (e.g. find_face). 
+Each service defines a grpc server.
 
 ### Face localization
 

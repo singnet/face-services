@@ -7,7 +7,7 @@ import pathlib
 
 from tqdm import tqdm
 
-model_urls = []
+
 with open("models.json", "r") as f:
     model_urls = json.load(f)["model_urls"]
 
