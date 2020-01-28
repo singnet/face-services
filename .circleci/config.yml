@@ -177,7 +177,8 @@ commands:
                   -v ~/${CERTS_DIR}:/opt/singnet/.certs \
                   $([ "${DOCKER_DEPLOY}" = "true" ] && echo "-v ~/${ETCD_HOST_DIR}:/${ETCD_CONTAINER_DIR}" || echo "") \
                   $([ "${DOCKER_MOUNT_VOLUMES}" = "true" ] && echo "-v ${DOCKER_MOUNT_SRC}:${DOCKER_MOUNT_DEST}" || echo "") \
-                  -tdi ${DOCKER_IMAGE_NAME}:${CIRCLE_PROJECT_USERNAME} ${SERVICE_RUN_COMMAND}
+                  -tdi ${DOCKER_IMAGE_NAME}:${CIRCLE_PROJECT_USERNAME} \
+                  bash -c "git fetch;git checkout ${CIRCLE_BRANCH};git pull;${SERVICE_RUN_COMMAND}"
             EOF
 
       - run:
@@ -191,7 +192,7 @@ commands:
             export DOCKER_DEPLOY=$([ "${CIRCLE_PROJECT_USERNAME}"/"${CIRCLE_BRANCH}" = "singnet/master" ] && echo "true" || echo "false")
             export PROD_TAG=$([ "${DOCKER_DEPLOY}" = "true" ] && echo "PROD_" || echo "")
             ssh -o "StrictHostKeyChecking no" ${SSH_USER}@${SSH_HOST} \<< EOF
-              docker exec -i ${PROD_TAG}${DOCKER_CONTAINER_NAME} ${SERVICE_TEST_COMMAND}
+              docker exec -i ${PROD_TAG}${DOCKER_CONTAINER_NAME} bash -c "${SERVICE_TEST_COMMAND}"
             EOF
 
 version: 2.1
@@ -202,8 +203,8 @@ jobs:
     working_directory: ~/singnet
     environment:
       CERTS_DIR: singnet/.certs
-      SERVICE_RUN_COMMAND: bash -c "git pull;python3.6 run_services.py --ssl --metering"
-      SERVICE_TEST_COMMAND: bash -c "sleep 10;python3.6 -m unittest"
+      SERVICE_RUN_COMMAND: python3.6 run_services.py --ssl --metering
+      SERVICE_TEST_COMMAND: sleep 20;python3.6 -m unittest
       SNETD_PORT_MAINNET: 6401-6404
       SNETD_PORT_ROPSTEN: 6301-6304
     steps:
