@@ -202,6 +202,8 @@ jobs:
     - image: circleci/python:3.6.6-node
     working_directory: ~/singnet
     environment:
+      SERVICE_NAME: face-services
+      SERVICE_DIR: .
       CERTS_DIR: singnet/.certs
       SERVICE_RUN_COMMAND: python3.6 run_services.py --ssl --metering
       SERVICE_TEST_COMMAND: sleep 20;python3.6 -m unittest
