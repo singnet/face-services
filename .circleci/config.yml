@@ -12,7 +12,6 @@ jobs:
       - ssh-deployment/deploy:
           ssh-host: ${SSH_HOST}
           ssh-user: ${SSH_USER}
-          service-dir: "face-services"
           mainnet-port: "6401-6404"
           testnet-port: "6301-6304"
           run-command: "python3.6 run_services.py --ssl --metering"
