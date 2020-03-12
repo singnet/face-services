@@ -99,15 +99,10 @@ def start_service(cwd, service_module, run_daemon, run_ssl, run_metering):
                 snetd_configs["ssl_cert"] = "/opt/singnet/.certs/fullchain.pem"
                 snetd_configs["ssl_key"] = "/opt/singnet/.certs/privkey.pem"
             if run_metering:
-                snetd_configs["payent_channel_ca_path"] = "/opt/singnet/.certs/ca.pem"
-                snetd_configs["payent_channel_cert_path"] = "/opt/singnet/.certs/client.pem"
-                snetd_configs["payent_channel_key_path"] = "/opt/singnet/.certs/client-key.pem"
                 snetd_configs["payment_channel_ca_path"] = "/opt/singnet/.certs/ca.pem"
                 snetd_configs["payment_channel_cert_path"] = "/opt/singnet/.certs/client.pem"
                 snetd_configs["payment_channel_key_path"] = "/opt/singnet/.certs/client-key.pem"
-                snetd_configs["metering_end_point"] = "https://{}-marketplace.singularitynet.io/metering".format(
-                    _network)
-                snetd_configs["free_call_signer_address"] = "0x3Bb9b2499c283cec176e7C707Ecb495B7a961ebf"
+                snetd_configs["metering_end_point"] = "https://{}-marketplace.singularitynet.io".format(_network)
                 service_id = conf.replace("./config/snetd_", "").replace("_config.json", "")
                 snetd_configs["pvt_key_for_metering"] = os.environ.get("PK_{}".format(service_id.upper()), "")
             infura_key = os.environ.get("INFURA_API_KEY", "")

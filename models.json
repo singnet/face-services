@@ -1,8 +1,8 @@
 {
     "model_urls": [
-        ["http://dlib.net/files/dlib_face_recognition_resnet_model_v1.dat.bz2", null],
-        ["http://dlib.net/files/shape_predictor_5_face_landmarks.dat.bz2", null],
-        ["http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2", null],
-        ["http://dlib.net/files/mmod_human_face_detector.dat.bz2", null]
+        ["https://snet-models.s3.amazonaws.com/face-services/dlib_face_recognition_resnet_model_v1.dat", null],
+        ["https://snet-models.s3.amazonaws.com/face-services/shape_predictor_5_face_landmarks.dat", null],
+        ["https://snet-models.s3.amazonaws.com/face-services/shape_predictor_68_face_landmarks.dat", null],
+        ["https://snet-models.s3.amazonaws.com/face-services/mmod_human_face_detector.dat", null]
     ]
 }
