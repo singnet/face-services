@@ -25,7 +25,7 @@ RUN apt-get update && \
     curl
 
 # Install snet daemon
-RUN SNETD_GIT_VERSION=`curl -s https://api.github.com/repos/singnet/snet-daemon/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' || echo "v3.1.2"` && \
+RUN SNETD_GIT_VERSION=`curl -s https://api.github.com/repos/singnet/snet-daemon/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")' || echo "v5.0.1"` && \
     SNETD_VERSION=${snetd_version:-${SNETD_GIT_VERSION}} && \
     cd /tmp && \
     wget https://github.com/singnet/snet-daemon/releases/download/${SNETD_VERSION}/snet-daemon-${SNETD_VERSION}-linux-amd64.tar.gz && \
@@ -37,6 +37,7 @@ RUN cd ${SINGNET_DIR} && \
     git clone -b ${git_branch} https://github.com/${git_owner}/${git_repo}.git
 
 RUN cd ${SINGNET_DIR}/${SERVICE_NAME} && \
+    pip3.6 install -U pip==20.3.4 && \
     pip3.6 install -r requirements.txt && \
     sh buildproto.sh && \
     python3.6 fetch_models.py /caches/models

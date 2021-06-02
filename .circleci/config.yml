@@ -12,9 +12,9 @@ jobs:
       - ssh-deployment/deploy:
           ssh-host: ${SSH_HOST}
           ssh-user: ${SSH_USER}
-          mainnet-port: "6401-6404"
+          mainnet-port: "7002-7005"
           testnet-port: "6301-6304"
-          run-command: "python3.6 run_services.py --ssl --metering"
+          run-command: "python3.6 run_services.py --ssl"
           docker-test-files: "Dockerfile, requirements.txt"
           docker-file-path: "Dockerfile"
           docker-no-cache: true

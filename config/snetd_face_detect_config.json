@@ -1,5 +1,5 @@
 {
-  "daemon_end_point": "0.0.0.0:6401",
+  "daemon_end_point": "0.0.0.0:7003",
   "ipfs_end_point": "http://ipfs.singularitynet.io:80",
   "passthrough_enabled": true,
   "passthrough_endpoint": "http://localhost:6001",
