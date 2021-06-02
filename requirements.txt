@@ -1,7 +1,7 @@
-requests
-tqdm
-dlib
-opencv-contrib-python
-grpcio
-grpcio-tools
-scikit-image
+requests==2.23.0
+tqdm==4.43.0
+dlib==19.19.0
+opencv-contrib-python==4.2.0.32
+grpcio==1.27.2
+grpcio-tools==1.27.2
+scikit-image==0.16.2

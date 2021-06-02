@@ -25,10 +25,6 @@ def main():
                         action="store_true",
                         dest="run_ssl",
                         help="Start the daemon with SSL.")
-    parser.add_argument("--metering",
-                        action="store_true",
-                        dest="run_metering",
-                        help="Start the daemon with Metering.")
     parser.add_argument("--update",
                         action="store_true",
                         dest="run_up",
@@ -48,8 +44,7 @@ def main():
     all_p = start_all_services(root_path,
                                service_modules,
                                args.run_daemon,
-                               args.run_ssl,
-                               args.run_metering)
+                               args.run_ssl)
     
     # Continuous checking all subprocess
     try:
@@ -64,25 +59,21 @@ def main():
         raise
 
 
-def start_all_services(cwd, service_modules, run_daemon, run_ssl, run_metering):
+def start_all_services(cwd, service_modules, run_daemon, run_ssl):
     """
     Loop through all service_modules and start them.
     For each one, an instance of Daemon "snetd" is created.
     snetd will start with configs from "snetd.config.json"
     """
     all_p = []
-    for i, service_module in enumerate(service_modules):
+    for service_module in service_modules:
         service_name = service_module.split(".")[-1]
         log.info("Launching {} on port {}".format(service_module, str(registry[service_name])))
-        all_p += start_service(cwd,
-                               service_module,
-                               run_daemon,
-                               run_ssl,
-                               run_metering)
+        all_p += start_service(cwd, service_module, run_daemon, run_ssl)
     return all_p
 
 
-def start_service(cwd, service_module, run_daemon, run_ssl, run_metering):
+def start_service(cwd, service_module, run_daemon, run_ssl):
     """
     Starts SNET Daemon ("snetd") and the python module of the service
     at the passed gRPC port.
@@ -98,13 +89,15 @@ def start_service(cwd, service_module, run_daemon, run_ssl, run_metering):
             if run_ssl:
                 snetd_configs["ssl_cert"] = "/opt/singnet/.certs/fullchain.pem"
                 snetd_configs["ssl_key"] = "/opt/singnet/.certs/privkey.pem"
-            if run_metering:
                 snetd_configs["payment_channel_ca_path"] = "/opt/singnet/.certs/ca.pem"
                 snetd_configs["payment_channel_cert_path"] = "/opt/singnet/.certs/client.pem"
                 snetd_configs["payment_channel_key_path"] = "/opt/singnet/.certs/client-key.pem"
+            service_id = conf.replace("./config/snetd_", "").replace("_config.json", "")
+            pvt_key_for_metering = os.environ.get("PK_{}".format(service_id.upper()), "")
+            if pvt_key_for_metering:
+                snetd_configs["metering_enabled"] = True
                 snetd_configs["metering_end_point"] = "https://{}-marketplace.singularitynet.io".format(_network)
-                service_id = conf.replace("./config/snetd_", "").replace("_config.json", "")
-                snetd_configs["pvt_key_for_metering"] = os.environ.get("PK_{}".format(service_id.upper()), "")
+                snetd_configs["pvt_key_for_metering"] = pvt_key_for_metering
             infura_key = os.environ.get("INFURA_API_KEY", "")
             if infura_key:
                 snetd_configs["ethereum_json_rpc_endpoint"] = "https://{}.infura.io/{}".format(_network, infura_key)
