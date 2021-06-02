@@ -96,7 +96,7 @@ def start_service(cwd, service_module, run_daemon, run_ssl):
             pvt_key_for_metering = os.environ.get("PK_{}".format(service_id.upper()), "")
             if pvt_key_for_metering:
                 snetd_configs["metering_enabled"] = True
-                snetd_configs["metering_end_point"] = "https://{}-marketplace.singularitynet.io".format(_network)
+                snetd_configs["metering_end_point"] = "https://marketplace-mt-v2.singularitynet.io"
                 snetd_configs["pvt_key_for_metering"] = pvt_key_for_metering
             infura_key = os.environ.get("INFURA_API_KEY", "")
             if infura_key:
