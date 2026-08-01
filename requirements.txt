@@ -1,4 +1,4 @@
-requests==2.23.0
+requests==2.31.0
 tqdm==4.43.0
 dlib==19.19.0
 opencv-contrib-python==4.2.0.32
